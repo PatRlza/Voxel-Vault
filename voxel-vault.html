@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Voxel Vault — просмотр структур модов</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root{
+    --bg:#0e1320;
+    --bg-grid:#16203a;
+    --panel:#141b2c;
+    --panel-2:#1a2338;
+    --border:#28324a;
+    --border-soft:#1f2841;
+    --text:#e7ecf6;
+    --muted:#8b96b3;
+    --accent:#ff8a3d;
+    --accent-dim:#7a4a26;
+    --ink:#5ec8d8;
+    --danger:#e5595f;
+    --ok:#4fbf7a;
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'Inter',sans-serif; font-size:14px;
+    background-image:
+      linear-gradient(var(--bg-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+    background-size:34px 34px;
+    background-position:-1px -1px;
+  }
+  #app{ display:flex; height:100vh; }
+  h1,h2,h3{ font-family:'Space Grotesk',sans-serif; margin:0; }
+  mono, .mono{ font-family:'JetBrains Mono',monospace; }
+  button{ font-family:inherit; cursor:pointer; }
+  ::-webkit-scrollbar{ width:9px; height:9px; }
+  ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:5px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+
+  /* ---------- Sidebar ---------- */
+  #sidebar{
+    width:300px; min-width:300px; background:var(--panel);
+    border-right:1px solid var(--border);
+    display:flex; flex-direction:column;
+  }
+  .brand{ padding:18px 16px 12px; border-bottom:1px solid var(--border-soft); }
+  .brand h1{ font-size:18px; color:var(--text); letter-spacing:0.2px; }
+  .brand p{ margin:4px 0 0; color:var(--muted); font-size:12px; line-height:1.5; }
+
+  .side-tabs{ display:flex; gap:0; padding:10px 16px 0; }
+  .side-tab{
+    flex:1; background:transparent; border:1px solid var(--border);
+    color:var(--muted); padding:8px 10px; font-size:12.5px;
+    border-radius:var(--radius);
+  }
+  .side-tab + .side-tab{ margin-left:6px; }
+  .side-tab.active{ color:var(--text); border-color:var(--ink); background:#122534; }
+
+  .side-section{ padding:14px 16px; border-bottom:1px solid var(--border-soft); }
+  .dropzone{
+    border:1.5px dashed var(--border); border-radius:var(--radius);
+    padding:16px 12px; text-align:center; color:var(--muted); font-size:12.5px;
+    transition:border-color .15s, color .15s;
+  }
+  .dropzone.drag{ border-color:var(--accent); color:var(--accent); }
+  .dropzone button{
+    margin-top:8px; background:var(--accent); color:#1a0f06; border:none;
+    padding:7px 14px; border-radius:var(--radius); font-weight:600; font-size:12.5px;
+  }
+  .dropzone .hint{ margin-top:6px; color:#5c688a; font-size:11px; }
+
+  .search-box{ position:relative; }
+  .search-box input{
+    width:100%; background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text); padding:8px 10px; border-radius:var(--radius); font-size:13px;
+  }
+  .search-box input:focus{ outline:none; border-color:var(--ink); }
+
+  #tree{ flex:1; overflow-y:auto; padding:6px 8px 16px; }
+  details.mod-node{ border-bottom:1px solid var(--border-soft); }
+  details.mod-node > summary{
+    list-style:none; cursor:pointer; padding:9px 8px;
+    display:flex; align-items:center; justify-content:space-between;
+    color:var(--text); font-size:13px; font-weight:500;
+  }
+  details.mod-node > summary::-webkit-details-marker{ display:none; }
+  details.mod-node > summary .chev{ color:var(--muted); font-size:11px; transition:transform .12s; margin-right:6px; }
+  details.mod-node[open] > summary .chev{ transform:rotate(90deg); }
+  summary .name{ flex:1; display:flex; align-items:center; }
+  .count-badge{
+    background:var(--panel-2); color:var(--muted); font-size:10.5px;
+    padding:1px 7px; border-radius:10px; font-family:'JetBrains Mono',monospace;
+  }
+  details.cat-node{ margin:0 0 4px 22px; }
+  details.cat-node > summary{
+    list-style:none; cursor:pointer; padding:5px 6px; color:var(--ink);
+    font-size:12px; display:flex; align-items:center; gap:6px;
+  }
+  details.cat-node > summary::-webkit-details-marker{ display:none; }
+  .struct-item{
+    padding:5px 6px 5px 30px; font-size:12px; color:var(--muted);
+    cursor:pointer; border-radius:var(--radius);
+  }
+  .struct-item:hover{ background:var(--panel-2); color:var(--text); }
+  .empty-note{ color:var(--muted); font-size:12.5px; padding:20px 10px; text-align:center; line-height:1.6; }
+
+  /* ---------- Main ---------- */
+  #main{ flex:1; display:flex; flex-direction:column; min-width:0; }
+  #topbar{
+    height:52px; min-height:52px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; padding:0 18px; gap:14px;
+    background:rgba(20,27,44,.5); backdrop-filter:blur(4px);
+  }
+  #topbar h2{ font-size:14.5px; color:var(--text); font-weight:600; }
+  #topbar .sub{ color:var(--muted); font-size:12px; }
+  .spacer{ flex:1; }
+  .warn-chip{
+    background:#2c1f14; border:1px solid var(--accent-dim); color:var(--accent);
+    font-size:12px; padding:5px 10px; border-radius:var(--radius);
+  }
+  .legend{ display:flex; align-items:center; gap:10px; font-size:11px; color:var(--muted); }
+  .legend .sw{ width:9px; height:9px; display:inline-block; border-radius:2px; margin-right:4px; vertical-align:-1px; }
+
+  #content{ flex:1; overflow-y:auto; padding:20px; }
+  #grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr));
+    gap:14px;
+  }
+  .tile{
+    aspect-ratio:1/1; background:var(--panel); border:1px solid var(--border);
+    border-radius:var(--radius); position:relative; overflow:hidden; cursor:pointer;
+    transition:border-color .12s;
+  }
+  .tile:hover{ border-color:var(--accent); }
+  .tile canvas, .tile img{ width:100%; height:100%; display:block; object-fit:contain; }
+  .tile .ph{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--border); font-size:22px; }
+  .tile .cap{
+    position:absolute; left:0; right:0; bottom:0; padding:6px 8px 7px;
+    background:linear-gradient(transparent, rgba(10,13,22,.92));
+  }
+  .tile .cap .n{ font-size:12px; color:var(--text); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tile .cap .c{ font-size:10.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tile.hidden{ display:none; }
+  .tile .flag{
+    position:absolute; top:6px; right:6px; width:8px; height:8px; border-radius:50%;
+    background:var(--danger); box-shadow:0 0 0 2px rgba(0,0,0,.4);
+  }
+
+  /* ---------- Modal ---------- */
+  #modal-overlay{
+    position:fixed; inset:0; background:rgba(6,9,16,.82); backdrop-filter:blur(2px);
+    display:none; align-items:center; justify-content:center; z-index:50;
+  }
+  #modal-overlay.open{ display:flex; }
+  #modal{
+    width:min(1080px, 94vw); height:min(640px, 88vh);
+    background:var(--panel); border:1px solid var(--border); border-radius:6px;
+    display:flex; overflow:hidden;
+  }
+  #modal-viewport{ flex:1; position:relative; background:radial-gradient(circle at 50% 40%, #182238, #0c1120); }
+  #modal-viewport canvas{ width:100%; height:100%; display:block; touch-action:none; }
+  #modal-viewport .hint-overlay{
+    position:absolute; left:12px; bottom:12px; color:var(--muted); font-size:11px;
+    background:rgba(10,13,22,.6); padding:5px 9px; border-radius:var(--radius);
+  }
+  #modal-close{
+    position:absolute; top:10px; right:10px; background:var(--panel-2); color:var(--text);
+    border:1px solid var(--border); width:30px; height:30px; border-radius:50%; font-size:15px;
+  }
+  #modal-side{
+    width:320px; min-width:320px; border-left:1px solid var(--border);
+    display:flex; flex-direction:column; overflow-y:auto;
+  }
+  .ms-block{ padding:16px 18px; border-bottom:1px solid var(--border-soft); }
+  .ms-block h3{ font-size:16px; margin-bottom:3px; }
+  .ms-tag{ color:var(--ink); font-size:12px; }
+  .stat-row{ display:flex; justify-content:space-between; font-size:12.5px; padding:3px 0; color:var(--muted); }
+  .stat-row b{ color:var(--text); font-family:'JetBrains Mono',monospace; font-weight:500; }
+  .btable{ width:100%; border-collapse:collapse; }
+  .btable td{ padding:4px 0; font-size:12px; border-bottom:1px solid var(--border-soft); }
+  .btable td.n{ color:var(--text); }
+  .btable td.c{ color:var(--muted); text-align:right; font-family:'JetBrains Mono',monospace; }
+  .sw-dot{ width:9px; height:9px; border-radius:2px; display:inline-block; margin-right:7px; vertical-align:-1px; }
+  .missing-box{ background:#2a1616; border:1px solid #5a2a2a; border-radius:var(--radius); padding:10px 12px; }
+  .missing-box .mrow{ display:flex; justify-content:space-between; font-size:12px; padding:3px 0; }
+  .missing-box .mrow b{ color:var(--danger); font-family:'JetBrains Mono',monospace; }
+  .missing-box .note{ color:#c99; font-size:11.5px; margin-top:6px; line-height:1.5; }
+
+  /* ---------- Find mods ---------- */
+  #find-panel{ display:none; padding:0; }
+  #find-panel.active{ display:block; }
+  .mod-search{ padding:14px 16px; }
+  .mod-search input{
+    width:100%; background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text); padding:9px 10px; border-radius:var(--radius); font-size:13px;
+  }
+  #mod-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr)); gap:12px; padding:4px 20px 20px; }
+  .mod-card{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:12px; display:flex; gap:10px; cursor:pointer;
+  }
+  .mod-card:hover{ border-color:var(--ink); }
+  .mod-card img{ width:44px; height:44px; border-radius:4px; background:var(--panel-2); flex:none; }
+  .mod-card .mi{ min-width:0; }
+  .mod-card .mi h4{ font-size:13px; color:var(--text); margin:0 0 3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mod-card .mi p{ font-size:11.5px; color:var(--muted); margin:0; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .mod-card .dl{ font-size:10.5px; color:#5c688a; margin-top:5px; font-family:'JetBrains Mono',monospace; }
+
+  #mod-detail{ display:none; padding:20px; max-width:760px; }
+  #mod-detail.active{ display:block; }
+  .md-head{ display:flex; gap:16px; align-items:center; margin-bottom:6px; }
+  .md-head img{ width:64px; height:64px; border-radius:8px; background:var(--panel-2); }
+  .md-head h2{ font-size:20px; }
+  .md-head .author{ color:var(--muted); font-size:12.5px; margin-top:3px; }
+  .back-link{ color:var(--ink); font-size:12.5px; margin-bottom:14px; display:inline-block; cursor:pointer; }
+  .md-desc{ color:var(--muted); font-size:13px; line-height:1.6; margin:14px 0 18px; }
+  .file-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:11px 14px; background:var(--panel); border:1px solid var(--border);
+    border-radius:var(--radius); margin-bottom:8px;
+  }
+  .file-row .fname{ font-size:12.5px; color:var(--text); font-family:'JetBrains Mono',monospace; }
+  .file-row .fmeta{ font-size:11px; color:var(--muted); margin-top:2px; }
+  .file-actions{ display:flex; gap:8px; flex:none; }
+  .btn{ border-radius:var(--radius); padding:7px 12px; font-size:12px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); }
+  .btn.primary{ background:var(--accent); border-color:var(--accent); color:#1a0f06; font-weight:600; }
+  .btn:disabled{ opacity:.5; cursor:default; }
+
+  #toasts{ position:fixed; right:18px; bottom:18px; display:flex; flex-direction:column; gap:8px; z-index:60; }
+  .toast{
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    padding:10px 14px; border-radius:var(--radius); font-size:12.5px; max-width:340px;
+    box-shadow:0 4px 18px rgba(0,0,0,.35);
+  }
+  .toast.err{ border-color:#5a2a2a; color:#f0b9b9; }
+
+  #progress-line{ height:2px; background:var(--border-soft); position:relative; overflow:hidden; display:none; }
+  #progress-line.on{ display:block; }
+  #progress-line i{ position:absolute; left:0; top:0; bottom:0; background:var(--accent); width:0%; transition:width .15s; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <aside id="sidebar">
+    <div class="brand">
+      <h1>Voxel&nbsp;Vault</h1>
+      <p>Все структуры твоих модов в одном месте — свернуть по моду, найти по названию, покрутить в 3D.</p>
+    </div>
+
+    <div class="side-tabs">
+      <button class="side-tab active" id="tab-lib">Библиотека</button>
+      <button class="side-tab" id="tab-find">Найти моды</button>
+    </div>
+
+    <div id="lib-side">
+      <div class="side-section">
+        <div class="dropzone" id="dropzone">
+          Перетащи сюда .zip с модами или .jar файлы
+          <div><button id="pick-btn">Выбрать файлы</button></div>
+          <div class="hint">Разбирается прямо в браузере, никуда не отправляется</div>
+        </div>
+      </div>
+      <div class="side-section" style="border-bottom:none;">
+        <div class="search-box">
+          <input id="search-input" type="text" placeholder="Поиск по структурам…" />
+        </div>
+      </div>
+      <div id="progress-line"><i></i></div>
+      <div id="tree"><div class="empty-note">Пока пусто.<br>Загрузи мод(ы), и здесь появится дерево структур.</div></div>
+    </div>
+
+    <div id="find-side" style="display:none;">
+      <div class="mod-search">
+        <input id="modrinth-input" type="text" placeholder="Название мода на Modrinth…" />
+      </div>
+      <div style="padding:0 16px 14px; color:var(--muted); font-size:11.5px; line-height:1.5;">
+        Ищет по открытому API Modrinth. CurseForge отсюда напрямую не тянется — у них закрытый API с ключом на сервере.
+      </div>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div id="topbar">
+      <h2 id="topbar-title">Библиотека</h2>
+      <div class="sub" id="topbar-sub">0 структур</div>
+      <div class="spacer"></div>
+      <div class="legend">
+        <span><span class="sw" style="background:#8a8a8a"></span>ваниль</span>
+        <span><span class="sw" style="background:#c1663b"></span>мод (известный)</span>
+        <span><span class="sw" style="background:repeating-linear-gradient(45deg,#ff8a3d,#ff8a3d 3px,#3a2612 3px,#3a2612 6px)"></span>нет мода</span>
+      </div>
+      <div class="warn-chip" id="warn-chip" style="display:none;"></div>
+    </div>
+
+    <div id="content">
+      <div id="lib-view">
+        <div id="grid"></div>
+      </div>
+
+      <div id="find-panel">
+        <div id="mod-grid"></div>
+        <div id="mod-detail"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="modal-overlay">
+  <div id="modal">
+    <div id="modal-viewport">
+      <canvas id="modal-canvas"></canvas>
+      <div class="hint-overlay">ЛКМ — вращать · колесо — зум</div>
+      <button id="modal-close">×</button>
+    </div>
+    <div id="modal-side"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+/* =========================================================
+   PART 1 — NBT parsing + block classification (tested core)
+   ========================================================= */
+class NBTReader {
+  constructor(bytes) {
+    this.view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    this.bytes = bytes;
+    this.pos = 0;
+  }
+  u8() { const v = this.view.getUint8(this.pos); this.pos += 1; return v; }
+  i16() { const v = this.view.getInt16(this.pos); this.pos += 2; return v; }
+  i32() { const v = this.view.getInt32(this.pos); this.pos += 4; return v; }
+  i64() {
+    const hi = this.view.getInt32(this.pos);
+    const lo = this.view.getUint32(this.pos + 4);
+    this.pos += 8;
+    return Number(BigInt(hi) * 4294967296n + BigInt(lo));
+  }
+  f32() { const v = this.view.getFloat32(this.pos); this.pos += 4; return v; }
+  f64() { const v = this.view.getFloat64(this.pos); this.pos += 8; return v; }
+  str() {
+    const len = this.view.getUint16(this.pos); this.pos += 2;
+    const slice = this.bytes.subarray(this.pos, this.pos + len);
+    this.pos += len;
+    return new TextDecoder('utf-8').decode(slice);
+  }
+  byteArray() { const len = this.i32(); const arr = this.bytes.subarray(this.pos, this.pos + len); this.pos += len; return arr; }
+  intArray() { const len = this.i32(); const out = new Array(len); for (let i=0;i<len;i++) out[i]=this.i32(); return out; }
+  longArray() { const len = this.i32(); const out = new Array(len); for (let i=0;i<len;i++) out[i]=this.i64(); return out; }
+  payload(tagId) {
+    switch (tagId) {
+      case 1: return this.u8();
+      case 2: return this.i16();
+      case 3: return this.i32();
+      case 4: return this.i64();
+      case 5: return this.f32();
+      case 6: return this.f64();
+      case 7: return this.byteArray();
+      case 8: return this.str();
+      case 9: return this.list();
+      case 10: return this.compound();
+      case 11: return this.intArray();
+      case 12: return this.longArray();
+      default: throw new Error('Unknown NBT tag id ' + tagId);
+    }
+  }
+  list() {
+    const elemType = this.u8();
+    const len = this.i32();
+    const out = [];
+    for (let i = 0; i < len; i++) { if (elemType === 0) continue; out.push(this.payload(elemType)); }
+    return out;
+  }
+  compound() {
+    const obj = {};
+    while (true) {
+      const tagId = this.u8();
+      if (tagId === 0) break;
+      const name = this.str();
+      obj[name] = this.payload(tagId);
+    }
+    return obj;
+  }
+  readNamedRoot() {
+    const tagId = this.u8();
+    if (tagId !== 10) throw new Error('root is not a compound');
+    this.str();
+    return this.compound();
+  }
+}
+
+function parseStructureNBT(arrayBuffer) {
+  let bytes;
+  try { bytes = pako.ungzip(new Uint8Array(arrayBuffer)); }
+  catch (e) { bytes = new Uint8Array(arrayBuffer); }
+  return new NBTReader(bytes).readNamedRoot();
+}
+
+const MC_DYE_COLORS = {
+  white:'#e9ecec', orange:'#f07613', magenta:'#bd44b3', light_blue:'#3aafd9',
+  yellow:'#f8c527', lime:'#70b919', pink:'#ed8dac', gray:'#3e4447',
+  light_gray:'#8e8e86', cyan:'#158991', purple:'#792aac', blue:'#35399d',
+  brown:'#724728', green:'#546d1b', red:'#a12722', black:'#141519'
+};
+const VANILLA_RULES = [
+  [/^minecraft:(deepslate|blackstone)/, '#3b3b40'],
+  [/^minecraft:(stone|cobblestone|andesite|tuff|calcite)/, '#8a8a8a'],
+  [/^minecraft:(diorite|quartz_block|smooth_stone)/, '#d9d6ce'],
+  [/^minecraft:granite/, '#9a6a5a'],
+  [/^minecraft:(dirt|coarse_dirt|podzol|farmland|rooted_dirt|^minecraft:mud$)/, '#6b4a2f'],
+  [/^minecraft:grass_block/, '#5b8a3c'],
+  [/^minecraft:(.*leaves|.*sapling|vine|moss)/, '#3f6e2e'],
+  [/^minecraft:spruce_/, '#5c4325'],
+  [/^minecraft:birch_/, '#d8c98a'],
+  [/^minecraft:dark_oak_/, '#3c2c17'],
+  [/^minecraft:(jungle_|acacia_|mangrove_|cherry_|bamboo_|crimson_|warped_)/, '#8a5a34'],
+  [/^minecraft:(.*_planks|.*_log|.*_wood|.*_fence|.*_stairs|.*_slab|.*_door|.*_trapdoor)$/, '#a9843f'],
+  [/^minecraft:water/, '#3a6fd6'],
+  [/^minecraft:lava/, '#e6641d'],
+  [/^minecraft:(ice|packed_ice|blue_ice|snow)/, '#cfe9f2'],
+  [/^minecraft:glass/, '#bfe7ea'],
+  [/^minecraft:sand$/, '#dcd0a0'],
+  [/^minecraft:(red_sand|sandstone|smooth_sandstone|cut_sandstone)/, '#c9a35f'],
+  [/^minecraft:gravel/, '#8a8478'],
+  [/^minecraft:(gold_ore|gold_block|raw_gold)/, '#e6c53a'],
+  [/^minecraft:(iron_ore|iron_block|raw_iron)/, '#d8c9b0'],
+  [/^minecraft:(diamond_ore|diamond_block)/, '#5fe6dc'],
+  [/^minecraft:(emerald_ore|emerald_block)/, '#2fbf6a'],
+  [/^minecraft:(lapis_ore|lapis_block)/, '#2a4fa8'],
+  [/^minecraft:(redstone_ore|redstone_block|redstone_wire)/, '#a01717'],
+  [/^minecraft:(copper|.*_copper)/, '#c1663b'],
+  [/^minecraft:coal_ore/, '#2b2b2b'],
+  [/^minecraft:.*bricks?$/, '#8f4b3a'],
+  [/^minecraft:nether_bricks?/, '#3a2226'],
+  [/^minecraft:netherrack/, '#6f2f2f'],
+  [/^minecraft:(soul_sand|soul_soil)/, '#4a3a2c'],
+  [/^minecraft:obsidian/, '#1c1526'],
+  [/^minecraft:end_stone/, '#dfe1a6'],
+  [/^minecraft:(glowstone|sea_lantern|shroomlight)/, '#f2d98a'],
+  [/^minecraft:prismarine/, '#5aa89a'],
+  [/^minecraft:bookshelf/, '#8f5a2e'],
+  [/^minecraft:bedrock/, '#232323'],
+  [/^minecraft:(hay_block|straw)/, '#d8b23a'],
+];
+function resolveVanillaColor(id) {
+  for (const dye of Object.keys(MC_DYE_COLORS)) {
+    if (id.startsWith('minecraft:' + dye + '_')) return MC_DYE_COLORS[dye];
+  }
+  for (const [re, color] of VANILLA_RULES) { if (re.test(id)) return color; }
+  return null;
+}
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const toHex = x => Math.round(255 * x).toString(16).padStart(2, '0');
+  return '#' + toHex(f(0)) + toHex(f(8)) + toHex(f(4));
+}
+function hashColor(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  return hslToHex(h % 360, 55, 52);
+}
+function classifyBlock(id, knownModIds) {
+  if (/(^|:)(air|cave_air|void_air|structure_void)$/.test(id)) return { skip:true };
+  const ns = id.split(':')[0];
+  if (ns === 'minecraft') { const c = resolveVanillaColor(id); return { skip:false, color: c || hashColor(id), missing:false }; }
+  if (knownModIds.has(ns)) return { skip:false, color: hashColor(id), missing:false };
+  return { skip:false, missing:true };
+}
+
+const STRUCTURE_RE = /(?:^|\/)data\/([a-z0-9_.\-]+)\/structures?\/(.+)\.nbt$/i;
+
+async function scanZipEntries(zip, out, knownModIds, progress, depth) {
+  depth = depth || 0;
+  if (depth > 6) return;
+  const entries = Object.values(zip.files);
+  for (let i = 0; i < entries.length; i++) {
+    const file = entries[i];
+    if (file.dir) continue;
+    const lower = file.name.toLowerCase();
+    if (lower.endsWith('.nbt')) {
+      const m = file.name.match(STRUCTURE_RE);
+      if (m) {
+        const modId = m[1].toLowerCase();
+        knownModIds.add(modId);
+        const rest = m[2].split('/');
+        const structName = rest.pop();
+        const category = rest.join(' / ') || 'общее';
+        out.push({ modId, category, name: structName, file });
+      }
+    } else if (lower.endsWith('.jar') || lower.endsWith('.zip')) {
+      try {
+        const buf = await file.async('arraybuffer');
+        const inner = await JSZip.loadAsync(buf);
+        await scanZipEntries(inner, out, knownModIds, progress, depth + 1);
+      } catch (e) { /* not a real archive / corrupted — skip */ }
+    }
+    if (progress && i % 20 === 0) { progress(i, entries.length); await new Promise(r => setTimeout(r, 0)); }
+  }
+}
+
+/* =========================================================
+   PART 2 — App state + structure building
+   ========================================================= */
+const state = { knownModIds: new Set(), structures: [], seq: 0 };
+
+function buildStructure(modId, category, name, nbt) {
+  const size = nbt.size || [0,0,0];
+  const paletteList = nbt.palette || (nbt.palettes ? nbt.palettes[0] : []) || [];
+  const paletteNames = paletteList.map(p => (p && p.Name) || 'minecraft:air');
+  const blocksList = nbt.blocks || [];
+  const counts = new Map();
+  const missing = new Map();
+  const cellColor = new Array(paletteNames.length);
+  const cellSkip = new Array(paletteNames.length);
+  let visibleCount = 0;
+  const positionsByColor = new Map();
+
+  for (let i = 0; i < paletteNames.length; i++) {
+    const cls = classifyBlock(paletteNames[i], state.knownModIds);
+    cellSkip[i] = !!cls.skip;
+    if (!cls.skip) cellColor[i] = cls.missing ? 'MISSING' : cls.color;
+  }
+  for (const b of blocksList) {
+    const idx = b.state;
+    const nm = paletteNames[idx] || 'minecraft:air';
+    if (cellSkip[idx]) continue;
+    visibleCount++;
+    counts.set(nm, (counts.get(nm) || 0) + 1);
+    const color = cellColor[idx];
+    if (color === 'MISSING') { const ns = nm.split(':')[0]; missing.set(ns, (missing.get(ns)||0)+1); }
+    if (!positionsByColor.has(color)) positionsByColor.set(color, []);
+    const pos = b.pos || [0,0,0];
+    positionsByColor.get(color).push(pos);
+  }
+  state.seq++;
+  return { id:'S'+state.seq, modId, category, name, size, totalEntries: blocksList.length, visibleCount, counts, missing, positionsByColor };
+}
+
+async function ingestZipFile(fileOrBlob, progressCb) {
+  const buf = await fileOrBlob.arrayBuffer();
+  const zip = await JSZip.loadAsync(buf);
+  const rawEntries = [];
+  await scanZipEntries(zip, rawEntries, state.knownModIds, progressCb, 0);
+  let ok = 0;
+  for (let i = 0; i < rawEntries.length; i++) {
+    const entry = rawEntries[i];
+    try {
+      const ab = await entry.file.async('arraybuffer');
+      const nbt = parseStructureNBT(ab);
+      state.structures.push(buildStructure(entry.modId, entry.category, entry.name, nbt));
+      ok++;
+    } catch (e) { console.warn('parse failed', entry.file.name, e); }
+    if (progressCb && i % 10 === 0) { progressCb(i, rawEntries.length); await new Promise(r=>setTimeout(r,0)); }
+  }
+  return ok;
+}
+
+/* =========================================================
+   PART 3 — Three.js rendering
+   ========================================================= */
+function makeHazardTexture() {
+  const c = document.createElement('canvas'); c.width = 32; c.height = 32;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#2a1608'; ctx.fillRect(0,0,32,32);
+  ctx.strokeStyle = '#ff8a3d'; ctx.lineWidth = 7;
+  for (let x=-32; x<32; x+=12) { ctx.beginPath(); ctx.moveTo(x,32); ctx.lineTo(x+32,0); ctx.stroke(); }
+  const tex = new THREE.CanvasTexture(c);
+  tex.needsUpdate = true;
+  return tex;
+}
+const HAZARD_TEXTURE = makeHazardTexture();
+const boxGeo = new THREE.BoxGeometry(0.94, 0.94, 0.94);
+
+function buildSceneForStructure(struct, instanceCap) {
+  const scene = new THREE.Scene();
+  const [sx, sy, sz] = struct.size;
+  const center = new THREE.Vector3(sx/2, sy/2, sz/2);
+
+  let totalVisible = struct.visibleCount || 1;
+  let stride = Math.max(1, Math.ceil(totalVisible / instanceCap));
+  let downsampled = stride > 1;
+
+  for (const [color, positions] of struct.positionsByColor.entries()) {
+    const sampled = stride > 1 ? positions.filter((_, idx) => idx % stride === 0) : positions;
+    if (sampled.length === 0) continue;
+    const mat = color === 'MISSING'
+      ? new THREE.MeshBasicMaterial({ map: HAZARD_TEXTURE })
+      : new THREE.MeshLambertMaterial({ color: new THREE.Color(color) });
+    const mesh = new THREE.InstancedMesh(boxGeo, mat, sampled.length);
+    const m = new THREE.Matrix4();
+    for (let i = 0; i < sampled.length; i++) {
+      const p = sampled[i];
+      m.makeTranslation(p[0]+0.5 - center.x, p[1]+0.5 - center.y, p[2]+0.5 - center.z);
+      mesh.setMatrixAt(i, m);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    scene.add(mesh);
+  }
+
+  scene.add(new THREE.HemisphereLight(0xdfe9ff, 0x0a0d16, 1.15));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.55);
+  dir.position.set(4, 6, 3);
+  scene.add(dir);
+
+  const maxDim = Math.max(sx, sy, sz, 1);
+  return { scene, maxDim, downsampled };
+}
+
+function frameCamera(camera, maxDim, theta, phi, radiusMul) {
+  const radius = maxDim * (radiusMul || 1.7);
+  camera.position.set(
+    radius * Math.sin(phi) * Math.sin(theta),
+    radius * Math.cos(phi),
+    radius * Math.sin(phi) * Math.cos(theta)
+  );
+  camera.lookAt(0,0,0);
+  camera.near = Math.max(0.05, maxDim*0.02);
+  camera.far = maxDim*20;
+  camera.updateProjectionMatrix();
+}
+
+function disposeScene(scene) {
+  scene.traverse(obj => {
+    if (obj.geometry && obj.geometry !== boxGeo) obj.geometry.dispose();
+    if (obj.material) obj.material.dispose();
+  });
+}
+
+let thumbRenderer = null;
+function getThumbRenderer() {
+  if (!thumbRenderer) {
+    const c = document.createElement('canvas');
+    thumbRenderer = new THREE.WebGLRenderer({ canvas:c, antialias:true, alpha:true, preserveDrawingBuffer:true });
+    thumbRenderer.setSize(300, 300, false);
+    thumbRenderer.setPixelRatio(Math.min(devicePixelRatio||1, 1.5));
+  }
+  return thumbRenderer;
+}
+
+function renderThumbnail(struct) {
+  const { scene, maxDim } = buildSceneForStructure(struct, 2500);
+  const renderer = getThumbRenderer();
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 200);
+  frameCamera(camera, maxDim, Math.PI*0.28, Math.PI*0.36, 1.9);
+  renderer.render(scene, camera);
+  const url = renderer.domElement.toDataURL('image/png');
+  disposeScene(scene);
+  return url;
+}
+
+/* live modal viewer */
+let modalRenderer = null, modalRAF = null, modalCtl = null;
+function openModalViewer(struct) {
+  const canvas = document.getElementById('modal-canvas');
+  const viewport = document.getElementById('modal-viewport');
+  const w = viewport.clientWidth, h = viewport.clientHeight;
+  modalRenderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+  modalRenderer.setPixelRatio(Math.min(devicePixelRatio||1, 2));
+  modalRenderer.setSize(w, h, false);
+
+  const { scene, maxDim, downsampled } = buildSceneForStructure(struct, 25000);
+  const camera = new THREE.PerspectiveCamera(45, w/h, 0.05, 400);
+  let theta = Math.PI*0.28, phi = Math.PI*0.36, radius = maxDim*1.9;
+  const minR = maxDim*0.4, maxR = maxDim*6;
+  function update(){
+    camera.position.set(radius*Math.sin(phi)*Math.sin(theta), radius*Math.cos(phi), radius*Math.sin(phi)*Math.cos(theta));
+    camera.lookAt(0,0,0);
+    camera.near = Math.max(0.05, maxDim*0.02); camera.far = maxDim*20; camera.updateProjectionMatrix();
+  }
+  update();
+
+  let dragging=false, lastX=0, lastY=0;
+  function down(e){ dragging=true; lastX=e.clientX; lastY=e.clientY; canvas.setPointerCapture(e.pointerId); }
+  function up(){ dragging=false; }
+  function move(e){
+    if(!dragging) return;
+    const dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
+    theta -= dx*0.008; phi -= dy*0.008;
+    phi = Math.max(0.12, Math.min(Math.PI-0.12, phi));
+    update();
+  }
+  function wheel(e){ e.preventDefault(); radius = Math.max(minR, Math.min(maxR, radius*(1+e.deltaY*0.0012))); update(); }
+  canvas.addEventListener('pointerdown', down);
+  canvas.addEventListener('pointerup', up);
+  canvas.addEventListener('pointerleave', up);
+  canvas.addEventListener('pointermove', move);
+  canvas.addEventListener('wheel', wheel, { passive:false });
+
+  function loop(){ modalRenderer.render(scene, camera); modalRAF = requestAnimationFrame(loop); }
+  loop();
+
+  modalCtl = {
+    dispose(){
+      cancelAnimationFrame(modalRAF);
+      canvas.removeEventListener('pointerdown', down);
+      canvas.removeEventListener('pointerup', up);
+      canvas.removeEventListener('pointerleave', up);
+      canvas.removeEventListener('pointermove', move);
+      canvas.removeEventListener('wheel', wheel);
+      disposeScene(scene);
+      modalRenderer.dispose();
+      modalRenderer = null;
+    },
+    downsampled
+  };
+  return modalCtl;
+}
+
+/* =========================================================
+   PART 4 — UI wiring: library tree + grid
+   ========================================================= */
+const el = id => document.getElementById(id);
+const grid = el('grid'), tree = el('tree');
+
+function groupStructures(list) {
+  const byMod = new Map();
+  for (const s of list) {
+    if (!byMod.has(s.modId)) byMod.set(s.modId, new Map());
+    const byCat = byMod.get(s.modId);
+    if (!byCat.has(s.category)) byCat.set(s.category, []);
+    byCat.get(s.category).push(s);
+  }
+  return byMod;
+}
+
+function rebuildAll() {
+  rebuildTree();
+  rebuildGrid();
+  rebuildTopbar();
+}
+
+function rebuildTopbar() {
+  el('topbar-sub').textContent = state.structures.length + ' структур · ' + state.knownModIds.size + ' модов';
+  let missingTotal = 0;
+  const missingMods = new Set();
+  for (const s of state.structures) for (const [ns, cnt] of s.missing.entries()) { missingTotal += cnt; missingMods.add(ns); }
+  const chip = el('warn-chip');
+  if (missingTotal > 0) {
+    chip.style.display = 'inline-block';
+    chip.textContent = '⚠ не хватает ' + missingMods.size + ' мод(ов) для ' + missingTotal + ' блоков';
+  } else chip.style.display = 'none';
+}
+
+function rebuildTree() {
+  tree.innerHTML = '';
+  if (state.structures.length === 0) {
+    tree.innerHTML = '<div class="empty-note">Пока пусто.<br>Загрузи мод(ы), и здесь появится дерево структур.</div>';
+    return;
+  }
+  const byMod = groupStructures(state.structures);
+  const mods = [...byMod.keys()].sort();
+  for (const modId of mods) {
+    const catMap = byMod.get(modId);
+    const total = [...catMap.values()].reduce((a,c)=>a+c.length,0);
+    const modDet = document.createElement('details');
+    modDet.className = 'mod-node'; modDet.open = mods.length <= 4;
+    const summary = document.createElement('summary');
+    summary.innerHTML = '<span class="name"><span class="chev">▶</span>' + escapeHtml(modId) + '</span><span class="count-badge">' + total + '</span>';
+    modDet.appendChild(summary);
+    const cats = [...catMap.keys()].sort();
+    for (const cat of cats) {
+      const catDet = document.createElement('details');
+      catDet.className = 'cat-node';
+      const catSum = document.createElement('summary');
+      catSum.innerHTML = '<span class="chev">▶</span>' + escapeHtml(cat) + ' <span class="count-badge">' + catMap.get(cat).length + '</span>';
+      catDet.appendChild(catSum);
+      for (const s of catMap.get(cat)) {
+        const item = document.createElement('div');
+        item.className = 'struct-item';
+        item.textContent = s.name;
+        item.addEventListener('click', () => {
+          const tileEl = document.getElementById('tile-' + s.id);
+          if (tileEl) { tileEl.scrollIntoView({behavior:'smooth', block:'center'}); tileEl.style.borderColor = 'var(--accent)'; setTimeout(()=>tileEl.style.borderColor='', 900); }
+        });
+        catDet.appendChild(item);
+      }
+      modDet.appendChild(catDet);
+    }
+    tree.appendChild(modDet);
+  }
+}
+
+const thumbCache = new Map();
+let io = null;
+function rebuildGrid() {
+  grid.innerHTML = '';
+  if (io) io.disconnect();
+  io = new IntersectionObserver(onTileVisible, { rootMargin: '200px' });
+  for (const s of state.structures) {
+    const tile = document.createElement('div');
+    tile.className = 'tile'; tile.id = 'tile-' + s.id;
+    tile.dataset.search = (s.modId + ' ' + s.category + ' ' + s.name).toLowerCase();
+    const ph = document.createElement('div');
+    ph.className = 'ph'; ph.textContent = '▨';
+    tile.appendChild(ph);
+    if (s.missing.size > 0) { const f = document.createElement('div'); f.className='flag'; tile.appendChild(f); }
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.innerHTML = '<div class="n">'+escapeHtml(s.name)+'</div><div class="c">'+escapeHtml(s.modId)+' · '+escapeHtml(s.category)+'</div>';
+    tile.appendChild(cap);
+    tile.addEventListener('click', () => openModal(s));
+    grid.appendChild(tile);
+    io.observe(tile);
+  }
+}
+
+function onTileVisible(entries) {
+  for (const e of entries) {
+    if (!e.isIntersecting) continue;
+    const tileEl = e.target;
+    io.unobserve(tileEl);
+    const sid = tileEl.id.replace('tile-','');
+    const struct = state.structures.find(x=>x.id===sid);
+    if (!struct) continue;
+    requestIdleCallbackShim(() => {
+      let url = thumbCache.get(sid);
+      if (!url) { try { url = renderThumbnail(struct); thumbCache.set(sid, url); } catch(e){ console.warn(e); return; } }
+      const img = document.createElement('img');
+      img.src = url;
+      const ph = tileEl.querySelector('.ph');
+      if (ph) ph.remove();
+      tileEl.insertBefore(img, tileEl.firstChild);
+    });
+  }
+}
+function requestIdleCallbackShim(fn){ (window.requestIdleCallback || function(f){setTimeout(f,1);})(fn); }
+
+function escapeHtml(s){ return (s+'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* search filter */
+el('search-input').addEventListener('input', (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll('.tile').forEach(t => {
+    t.classList.toggle('hidden', q.length>0 && !t.dataset.search.includes(q));
+  });
+  document.querySelectorAll('details.mod-node').forEach(modDet=>{
+    let anyOpen = q.length===0 ? modDet.open : false;
+    modDet.querySelectorAll('details.cat-node').forEach(catDet=>{
+      let anyItem = false;
+      catDet.querySelectorAll('.struct-item').forEach(it=>{
+        const match = q.length===0 || it.textContent.toLowerCase().includes(q);
+        it.style.display = match? '' : 'none';
+        if (match) anyItem = true;
+      });
+      catDet.style.display = anyItem ? '' : 'none';
+      if (q.length>0 && anyItem) { catDet.open = true; anyOpen = true; }
+    });
+    modDet.style.display = 'block';
+    if (q.length>0) modDet.open = anyOpen;
+  });
+});
+
+/* =========================================================
+   PART 5 — Modal open/close
+   ========================================================= */
+function openModal(struct) {
+  el('modal-overlay').classList.add('open');
+  const ctl = openModalViewer(struct);
+  const side = el('modal-side');
+  const rows = [...struct.counts.entries()].sort((a,b)=>b[1]-a[1]);
+  let tableHtml = rows.map(([name,count])=>{
+    const ns = name.split(':')[0];
+    const isMissing = state.structures.length && classifyBlock(name, state.knownModIds).missing;
+    const color = isMissing ? null : (classifyBlock(name, state.knownModIds).color);
+    const sw = isMissing
+      ? '<span class="sw-dot" style="background:repeating-linear-gradient(45deg,#ff8a3d,#ff8a3d 2px,#3a2612 2px,#3a2612 4px)"></span>'
+      : '<span class="sw-dot" style="background:'+color+'"></span>';
+    return '<tr><td class="n">'+sw+escapeHtml(name)+'</td><td class="c">'+count+'</td></tr>';
+  }).join('');
+
+  let missingHtml = '';
+  if (struct.missing.size > 0) {
+    const mrows = [...struct.missing.entries()].sort((a,b)=>b[1]-a[1])
+      .map(([ns,cnt])=>'<div class="mrow"><span>'+escapeHtml(ns)+'</span><b>'+cnt+' блок(ов)</b></div>').join('');
+    missingHtml = '<div class="ms-block"><h3 style="font-size:13px;color:var(--danger);margin-bottom:8px;">Не хватает текстур / модов</h3><div class="missing-box">'+mrows+
+      '<div class="note">Похоже, ID мода совпадает с namespace блока — попробуй загрузить мод с таким ID, чтобы структура раскрасилась полностью.</div></div></div>';
+  }
+
+  side.innerHTML =
+    '<div class="ms-block"><h3>'+escapeHtml(struct.name)+'</h3><div class="ms-tag">'+escapeHtml(struct.modId)+' · '+escapeHtml(struct.category)+'</div></div>'+
+    '<div class="ms-block">'+
+      '<div class="stat-row"><span>Размер</span><b>'+struct.size.join(' × ')+'</b></div>'+
+      '<div class="stat-row"><span>Всего записей</span><b>'+struct.totalEntries+'</b></div>'+
+      '<div class="stat-row"><span>Видимых блоков</span><b>'+struct.visibleCount+'</b></div>'+
+      '<div class="stat-row"><span>Уникальных типов</span><b>'+struct.counts.size+'</b></div>'+
+      (ctl.downsampled ? '<div class="stat-row" style="color:var(--accent)"><span>Превью упрощено</span><b>стриды</b></div>' : '')+
+    '</div>'+
+    missingHtml+
+    '<div class="ms-block" style="flex:1;"><h3 style="font-size:13px;margin-bottom:8px;">Блоки в структуре</h3><table class="btable">'+tableHtml+'</table></div>';
+
+  el('modal-close').onclick = closeModal;
+  el('modal-overlay').onclick = (e) => { if (e.target.id==='modal-overlay') closeModal(); };
+}
+function closeModal() {
+  el('modal-overlay').classList.remove('open');
+  if (modalCtl) { modalCtl.dispose(); modalCtl = null; }
+}
+
+/* =========================================================
+   PART 6 — File ingest UI
+   ========================================================= */
+const dz = el('dropzone');
+const fileInput = document.createElement('input');
+fileInput.type = 'file'; fileInput.multiple = true; fileInput.accept = '.zip,.jar';
+fileInput.style.display = 'none';
+document.body.appendChild(fileInput);
+el('pick-btn').addEventListener('click', (e)=>{ e.stopPropagation(); fileInput.click(); });
+dz.addEventListener('click', ()=> fileInput.click());
+fileInput.addEventListener('change', ()=> handleFiles(fileInput.files));
+
+['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.remove('drag'); }));
+dz.addEventListener('drop', e=> handleFiles(e.dataTransfer.files));
+
+async function handleFiles(fileList) {
+  const files = [...fileList];
+  if (!files.length) return;
+  const progLine = el('progress-line'), progBar = progLine.querySelector('i');
+  progLine.classList.add('on');
+  let totalOk = 0;
+  for (const f of files) {
+    try {
+      const ok = await ingestZipFile(f, (i, n) => { progBar.style.width = Math.round((i/Math.max(n,1))*100) + '%'; });
+      totalOk += ok;
+    } catch (e) {
+      console.error(e);
+      showToast('Не получилось разобрать «'+f.name+'» — файл повреждён или это не zip/jar.', true);
+    }
+  }
+  progLine.classList.remove('on'); progBar.style.width = '0%';
+  fileInput.value = '';
+  rebuildAll();
+  if (totalOk > 0) showToast('Добавлено структур: ' + totalOk);
+  else showToast('В загруженных файлах структур (.nbt) не нашлось.', true);
+}
+
+function showToast(msg, isErr) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (isErr ? ' err' : '');
+  t.textContent = msg;
+  el('toasts').appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(), 300); }, 4200);
+}
+
+/* =========================================================
+   PART 7 — Modrinth "Найти моды" panel
+   ========================================================= */
+el('tab-lib').addEventListener('click', () => switchTab('lib'));
+el('tab-find').addEventListener('click', () => switchTab('find'));
+function switchTab(which) {
+  el('tab-lib').classList.toggle('active', which==='lib');
+  el('tab-find').classList.toggle('active', which==='find');
+  el('lib-side').style.display = which==='lib' ? '' : 'none';
+  el('find-side').style.display = which==='find' ? '' : 'none';
+  el('lib-view').style.display = which==='lib' ? '' : 'none';
+  el('find-panel').classList.toggle('active', which==='find');
+  el('topbar-title').textContent = which==='lib' ? 'Библиотека' : 'Найти моды';
+  el('topbar-sub').textContent = which==='lib' ? (state.structures.length+' структур · '+state.knownModIds.size+' модов') : 'поиск по Modrinth';
+  el('mod-detail').classList.remove('active');
+  if (which==='find') el('mod-grid').style.display = 'grid';
+}
+
+let modrinthTimer = null;
+el('modrinth-input').addEventListener('input', (e) => {
+  clearTimeout(modrinthTimer);
+  const q = e.target.value.trim();
+  modrinthTimer = setTimeout(()=> searchModrinth(q), 350);
+});
+
+async function searchModrinth(query) {
+  const grid2 = el('mod-grid');
+  el('mod-detail').classList.remove('active');
+  grid2.style.display = 'grid';
+  grid2.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">Ищем…</div>';
+  try {
+    const facets = encodeURIComponent('[["project_type:mod"]]');
+    const url = 'https://api.modrinth.com/v2/search?query='+encodeURIComponent(query)+'&facets='+facets+'&limit=24';
+    const res = await fetch(url);
+    const data = await res.json();
+    const hits = data.hits || [];
+    if (!hits.length) { grid2.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">Ничего не нашлось.</div>'; return; }
+    grid2.innerHTML = '';
+    for (const hit of hits) {
+      const card = document.createElement('div');
+      card.className = 'mod-card';
+      const dls = formatNum(hit.downloads||0);
+      card.innerHTML =
+        '<img src="'+(hit.icon_url||'')+'" onerror="this.style.visibility=\'hidden\'"/>'+
+        '<div class="mi"><h4>'+escapeHtml(hit.title)+'</h4><p>'+escapeHtml(hit.description||'')+'</p><div class="dl">'+dls+' скачиваний</div></div>';
+      card.addEventListener('click', ()=> openModDetail(hit.project_id, hit.slug));
+      grid2.appendChild(card);
+    }
+  } catch (e) {
+    grid2.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">Не удалось достучаться до Modrinth API (сеть/CORS). Попробуй ещё раз.</div>';
+  }
+}
+function formatNum(n){ return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+
+async function openModDetail(projectId, slug) {
+  el('mod-grid').style.display = 'none';
+  const det = el('mod-detail');
+  det.classList.add('active');
+  det.innerHTML = '<div class="empty-note">Загружаем…</div>';
+  try {
+    const [proj, versions] = await Promise.all([
+      fetch('https://api.modrinth.com/v2/project/'+projectId).then(r=>r.json()),
+      fetch('https://api.modrinth.com/v2/project/'+projectId+'/version').then(r=>r.json())
+    ]);
+    let html = '<div class="back-link" id="back-to-search">← назад к поиску</div>';
+    html += '<div class="md-head"><img src="'+(proj.icon_url||'')+'" onerror="this.style.visibility=\'hidden\'"/><div><h2>'+escapeHtml(proj.title)+'</h2><div class="author">'+formatNum(proj.downloads||0)+' скачиваний · '+escapeHtml((proj.categories||[]).join(', '))+'</div></div></div>';
+    html += '<div class="md-desc">'+escapeHtml(proj.description||'')+'</div>';
+    const top = versions.slice(0, 8);
+    for (const v of top) {
+      const file = (v.files||[]).find(f=>f.primary) || v.files[0];
+      if (!file) continue;
+      html += '<div class="file-row" data-url="'+encodeURIComponent(file.url)+'" data-name="'+encodeURIComponent(file.filename)+'">'+
+        '<div><div class="fname">'+escapeHtml(file.filename)+'</div><div class="fmeta">'+escapeHtml((v.game_versions||[]).slice(-3).join(', '))+' · '+escapeHtml((v.loaders||[]).join('/'))+' · '+Math.round((file.size||0)/1024)+' КБ</div></div>'+
+        '<div class="file-actions"><button class="btn dl-btn">Скачать</button><button class="btn primary add-btn">Добавить в библиотеку</button></div>'+
+      '</div>';
+    }
+    det.innerHTML = html;
+    el('back-to-search').addEventListener('click', ()=>{ det.classList.remove('active'); el('mod-grid').style.display='grid'; });
+    det.querySelectorAll('.dl-btn').forEach(btn=>{
+      const row = btn.closest('.file-row');
+      btn.addEventListener('click', ()=> downloadDirect(decodeURIComponent(row.dataset.url), decodeURIComponent(row.dataset.name)));
+    });
+    det.querySelectorAll('.add-btn').forEach(btn=>{
+      const row = btn.closest('.file-row');
+      btn.addEventListener('click', ()=> addModToLibrary(decodeURIComponent(row.dataset.url), decodeURIComponent(row.dataset.name), btn));
+    });
+  } catch (e) {
+    det.innerHTML = '<div class="back-link" id="back-to-search2">← назад</div><div class="empty-note">Не удалось загрузить страницу мода.</div>';
+    const b = document.getElementById('back-to-search2');
+    if (b) b.addEventListener('click', ()=>{ det.classList.remove('active'); el('mod-grid').style.display='grid'; });
+  }
+}
+
+function downloadDirect(url, filename) {
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.target = '_blank'; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+async function addModToLibrary(url, filename, btn) {
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Загружаем…';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('bad response');
+    const blob = await res.blob();
+    const ok = await ingestZipFile(blob, ()=>{});
+    rebuildAll();
+    btn.textContent = ok > 0 ? 'Добавлено ✓' : 'Структур нет';
+    showToast(filename + ': добавлено структур — ' + ok);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = original;
+    showToast('Не смог скачать автоматически (CORS/сеть). Нажми «Скачать» и перетащи файл в библиотеку вручную.', true);
+  }
+}
+</script>
+</body>
+</html>
