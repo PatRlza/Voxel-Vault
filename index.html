@@ -33,13 +33,19 @@
   @keyframes fadeUp{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
   @keyframes spin{ to{ transform:rotate(360deg); } }
   @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+  .icon{ width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; display:inline-block; vertical-align:-3px; flex:none; }
+  .icon.sm{ width:12px; height:12px; vertical-align:-2px; }
+  .icon.lg{ width:20px; height:20px; }
+  .btn-ic{ display:inline-flex; align-items:center; gap:7px; }
+  .mod-del-btn{ margin-left:8px; width:24px; height:24px; border-radius:7px; background:transparent; border:1px solid transparent; color:var(--muted); display:flex; align-items:center; justify-content:center; flex:none; transition:background .15s var(--ease), color .15s var(--ease), border-color .15s var(--ease); }
+  .mod-del-btn:hover{ background:#2a1616; border-color:#5a2a2a; color:var(--danger); }
 
   #sidebar{ width:360px; min-width:360px; background:var(--panel); border-right:1px solid var(--border); display:flex; flex-direction:column; min-height:0; position:relative; }
   .mini-topbar{ height:58px; min-height:58px; display:flex; align-items:center; gap:11px; padding:0 16px; border-bottom:1px solid var(--border-soft); }
   .icon-btn{ width:36px; height:36px; flex:none; border-radius:11px; background:var(--panel-2); border:1px solid var(--border); color:var(--text); font-size:16px; display:flex; align-items:center; justify-content:center; transition:border-color .15s var(--ease), transform .15s var(--ease); }
   .icon-btn:hover{ border-color:var(--ink); transform:translateY(-1px); }
   .mini-topbar-title{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:19px; flex:1; }
-  .popover{ position:absolute; top:64px; left:16px; width:250px; background:var(--panel-2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:15px; box-shadow:0 16px 34px rgba(0,0,0,.5); z-index:45; opacity:0; transform:translateY(-6px) scale(.97); pointer-events:none; transition:opacity .18s var(--ease), transform .18s var(--ease); }
+  .popover{ position:absolute; top:64px; left:16px; width:280px; max-height:80vh; overflow-y:auto; background:var(--panel-2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:15px; box-shadow:0 16px 34px rgba(0,0,0,.5); z-index:45; opacity:0; transform:translateY(-6px) scale(.97); pointer-events:none; transition:opacity .18s var(--ease), transform .18s var(--ease); }
   .popover.open{ opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
   .popover-title{ font-weight:600; font-size:13px; margin-bottom:11px; }
   .popover-row{ display:flex; flex-direction:column; gap:7px; font-size:11.5px; color:var(--muted); margin-bottom:10px; }
@@ -226,12 +232,20 @@
         <input type="range" id="concurrency-range" min="1" max="4" value="2" step="1">
       </label>
       <button class="btn" id="clear-cache-btn" style="width:100%;">Очистить кэш превью</button>
+      <div class="popover-title" style="margin-top:16px;">Собрать сборку самостоятельно</div>
+      <label class="popover-row">Сколько модов (максимум 300)
+        <input type="number" id="autobuild-count" class="mono" min="1" max="300" value="20" style="background:var(--panel); border:1px solid var(--border); color:var(--text); border-radius:var(--radius); padding:6px 8px;">
+      </label>
+      <label class="popover-row">Категории (пусто = совсем случайно)</label>
+      <div id="autobuild-category-mount" style="margin-bottom:10px;"></div>
+      <button class="btn primary btn-ic" id="autobuild-start" style="width:100%;"></button>
+      <div id="autobuild-progress" style="font-size:11px; color:var(--muted); margin-top:8px; line-height:1.5;"></div>
     </div>
     <div class="brand-sub"><p>Все структуры твоих модов в одном месте — свернуть по моду, найти по названию, покрутить в 3D.</p></div>
     <div class="side-tabs">
-      <button class="side-tab active" id="tab-lib">Библиотека</button>
-      <button class="side-tab" id="tab-find">Найти моды</button>
-      <button class="side-tab" id="tab-build">Сборка<span id="build-count-badge" class="count-badge" style="display:none;">0</span></button>
+      <button class="side-tab active btn-ic" id="tab-lib"></button>
+      <button class="side-tab btn-ic" id="tab-find"></button>
+      <button class="side-tab btn-ic" id="tab-build"></button>
     </div>
 
     <div id="lib-side">
@@ -262,7 +276,7 @@
       <div id="build-side-info">
         Сюда попадают моды, которые ты добавил через «Найти моды». Когда наберёшь нужный набор — скачай всё одним .zip и закинь в папку <span class="mono">mods</span>.
         Для каждого мода показываю обязательные зависимости, которых не хватает в сборке — жми «+», чтобы подтянуть их тоже.
-        <button class="btn primary" id="build-export">Скачать сборку .zip</button>
+        <button class="btn primary btn-ic" id="build-export" style="justify-content:center;">Скачать сборку .zip</button>
       </div>
     </div>
   </aside>
@@ -310,6 +324,25 @@
 <div id="toasts"></div>
 
 <script>
+/* =========================================================
+   PART 0 — tiny inline icon set (real vector art, not emoji)
+   ========================================================= */
+const ICONS = {
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  layers: '<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
+  package: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  refresh: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/>',
+  warning: '<path d="M12 3l10 18H2L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".6" fill="currentColor" stroke="none"/>',
+  upload: '<path d="M12 19V6"/><path d="M6 11l6-6 6 6"/><path d="M4 21h16"/>',
+  download: '<path d="M12 5v13"/><path d="M6 12l6 6 6-6"/><path d="M4 21h16"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  trash: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/>',
+  dice: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="16" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1" fill="currentColor" stroke="none"/>',
+};
+function icon(name, cls) { return '<svg class="icon'+(cls?(' '+cls):'')+'" viewBox="0 0 24 24">'+(ICONS[name]||'')+'</svg>'; }
+
 /* =========================================================
    PART 1 — NBT parsing
    ========================================================= */
@@ -842,6 +875,20 @@ async function openModalViewer(struct) {
    PART 6 — UI wiring: library tree + VIRTUALIZED grid
    ========================================================= */
 const el = id => document.getElementById(id);
+el('tab-lib').innerHTML = icon('layers') + ' Библиотека';
+el('tab-find').innerHTML = icon('search') + ' Найти моды';
+el('tab-build').innerHTML = icon('package') + ' Сборка<span id="build-count-badge" class="count-badge" style="display:none;">0</span>';
+el('settings-btn').innerHTML = icon('gear');
+el('modal-reset').innerHTML = icon('refresh') + ' Сбросить вид';
+el('modal-close').innerHTML = icon('close');
+el('missing-close').innerHTML = icon('close');
+el('pick-btn').innerHTML = icon('upload') + ' Выбрать файлы';
+el('autobuild-start').innerHTML = icon('dice') + ' Собрать!';
+el('build-export').innerHTML = icon('download') + ' Скачать сборку .zip';
+el('clear-cache-btn').innerHTML = icon('trash','sm') + ' Очистить кэш превью';
+el('clear-cache-btn').classList.add('btn-ic');
+el('clear-cache-btn').style.justifyContent = 'center';
+el('autobuild-start').style.justifyContent = 'center';
 const grid = el('grid'), tree = el('tree');
 function escapeHtml(s){ return (s+'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -852,12 +899,26 @@ function groupStructures(list) {
   return byMod;
 }
 function rebuildAll(){ rebuildTree(); rebuildGrid(); rebuildTopbar(); }
+function removeModFromLibrary(modId) {
+  state.structures = state.structures.filter(s => s.modId !== modId);
+  for (const k of [...state.textureIndex.keys()]) if (k.startsWith(modId+':')) state.textureIndex.delete(k);
+  for (const k of [...state.blockstateIndex.keys()]) if (k.startsWith(modId+':')) state.blockstateIndex.delete(k);
+  for (const k of [...state.modelIndex.keys()]) if (k.startsWith(modId+':')) state.modelIndex.delete(k);
+  for (const k of [...realTexPromiseCache.keys()]) if (k.startsWith(modId+':')) realTexPromiseCache.delete(k);
+  for (const k of [...jsonEntryCache.keys()]) if (k.startsWith(modId+':')) jsonEntryCache.delete(k);
+  for (const k of [...shapeCache.keys()]) if (k.startsWith(modId+':')) shapeCache.delete(k);
+  for (const k of [...materialCache.keys()]) if (k.startsWith('TEX:'+modId+':')) materialCache.delete(k);
+  state.knownModIds.delete(modId);
+  thumbCache.clear();
+  rebuildAll();
+  showToast('Мод «' + modId + '» и его структуры удалены из библиотеки.');
+}
 function rebuildTopbar() {
   el('topbar-sub').textContent = state.structures.length + ' структур · ' + state.knownModIds.size + ' модов';
   const missing = aggregateLibraryMissing();
   let missingTotal = 0; for (const v of missing.values()) missingTotal += v;
   const chip = el('warn-chip');
-  if (missingTotal > 0) { chip.style.display = 'inline-block'; chip.textContent = '⚠ не хватает ' + missing.size + ' мод(ов) для ' + missingTotal + ' блоков — нажми'; }
+  if (missingTotal > 0) { chip.style.display = 'inline-flex'; chip.style.alignItems = 'center'; chip.style.gap = '7px'; chip.innerHTML = icon('warning') + ' не хватает ' + missing.size + ' мод(ов) для ' + missingTotal + ' блоков — нажми'; }
   else chip.style.display = 'none';
 }
 function rebuildTree() {
@@ -871,6 +932,10 @@ function rebuildTree() {
     const modDet = document.createElement('details'); modDet.className = 'mod-node'; modDet.open = mods.length <= 4;
     const summary = document.createElement('summary');
     summary.innerHTML = '<span class="name"><span class="chev">▶</span>' + escapeHtml(modId) + '</span><span class="count-badge">' + total + '</span>';
+    const delBtn = document.createElement('button'); delBtn.className = 'mod-del-btn'; delBtn.title = 'Удалить мод из библиотеки';
+    delBtn.innerHTML = icon('trash','sm');
+    delBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); removeModFromLibrary(modId); });
+    summary.appendChild(delBtn);
     modDet.appendChild(summary);
     for (const cat of [...catMap.keys()].sort()) {
       const catDet = document.createElement('details'); catDet.className = 'cat-node';
@@ -1004,9 +1069,9 @@ function buildMissingMiniCard(ns, count, onLoaded) {
     wrap.querySelector('.mm-icon').replaceWith(img);
     wrap.querySelector('.mm-name').textContent = guess.title;
     const sub = wrap.querySelector('.mm-sub'); sub.textContent = '';
-    const btn = document.createElement('button'); btn.className = 'btn primary mm-btn'; btn.textContent = 'Подгрузить';
+    const btn = document.createElement('button'); btn.className = 'btn primary mm-btn btn-ic'; btn.innerHTML = icon('download','sm') + ' Подгрузить';
     btn.addEventListener('click', async () => {
-      btn.disabled = true; btn.textContent = 'Качаем…';
+      btn.disabled = true; btn.innerHTML = icon('download','sm') + ' Качаем…';
       try {
         const proj = await getExactProject(guess.projectId);
         const versions = await fetch('https://api.modrinth.com/v2/project/'+guess.projectId+'/version').then(r=>r.json());
@@ -1017,10 +1082,10 @@ function buildMissingMiniCard(ns, count, onLoaded) {
         const ok = await ingestZipFile(blob, ()=>{});
         addToBuild(guess.projectId, { title: guess.title, icon: guess.icon, filename: file.filename, blob, dependencies: v.dependencies||[] });
         rebuildAll();
-        btn.textContent = 'Готово ✓';
+        btn.innerHTML = icon('plus','sm') + ' Готово';
         showToast(guess.title + ': добавлено (' + ok + ' структур), сборка тоже обновлена');
         if (onLoaded) onLoaded();
-      } catch (err) { btn.disabled = false; btn.textContent = 'Подгрузить'; showToast('Не получилось автоматически — открой страницу мода и добавь вручную.', true); }
+      } catch (err) { btn.disabled = false; btn.innerHTML = icon('download','sm') + ' Подгрузить'; showToast('Не получилось автоматически — открой страницу мода и добавь вручную.', true); }
     });
     sub.appendChild(btn);
   });
@@ -1196,10 +1261,102 @@ el('loader-dropdown-mount').appendChild(loaderDd.el);
 el('category-dropdown-mount').appendChild(categoryDd.el);
 [versionDd, loaderDd, categoryDd].forEach(dd => dd.setOnChange(() => searchModrinth(el('modrinth-input').value.trim())));
 
+/* =========================================================
+   PART 12 — "по приколу": self-assembling random/category build
+   ========================================================= */
+const autobuildCategoryDd = createDropdown({ label:'Случайно (без категорий)', options:CATEGORY_OPTIONS, multi:true });
+el('autobuild-category-mount').appendChild(autobuildCategoryDd.el);
+
+function shuffleArray(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+async function fetchModPool(categories, want) {
+  const pool = []; let offset = 0; const pageSize = 100;
+  const facetsList = [["project_type:mod"]];
+  if (categories && categories.length) facetsList.push(categories.map(c => "categories:"+c));
+  while (pool.length < want && offset < 900) {
+    const url = 'https://api.modrinth.com/v2/search?query=&facets='+encodeURIComponent(JSON.stringify(facetsList))+'&limit='+pageSize+'&offset='+offset+'&index=downloads';
+    let data;
+    try { data = await fetch(url).then(r=>r.json()); } catch(e) { break; }
+    const hits = data.hits || [];
+    if (!hits.length) break;
+    pool.push(...hits);
+    offset += pageSize;
+    if (hits.length < pageSize) break;
+  }
+  return pool;
+}
+let autobuildRunning = false;
+async function autoAssembleBuild() {
+  if (autobuildRunning) return;
+  const count = Math.max(1, Math.min(300, parseInt(el('autobuild-count').value, 10) || 20));
+  const categories = autobuildCategoryDd.getValue();
+  const progressEl = el('autobuild-progress');
+  const startBtn = el('autobuild-start');
+  autobuildRunning = true; startBtn.disabled = true; startBtn.innerHTML = icon('dice') + ' Собираем…';
+  progressEl.textContent = 'Ищу моды' + (categories.length ? ' в категориях: ' + categories.join(', ') : ' совсем случайно') + '…';
+  try {
+    const pool = await fetchModPool(categories, Math.max(count * 2, 60));
+    if (!pool.length) { progressEl.textContent = 'Ничего не нашлось для этих категорий.'; return; }
+    const picked = shuffleArray(pool).slice(0, count);
+    let added = 0, failed = 0;
+    for (let i = 0; i < picked.length; i++) {
+      if (state.build.size >= 300) break;
+      const hit = picked[i];
+      if (state.build.has(hit.project_id)) continue;
+      progressEl.textContent = 'Качаю ' + (i+1) + '/' + picked.length + ': ' + hit.title + '…';
+      try {
+        const versions = await fetch('https://api.modrinth.com/v2/project/'+hit.project_id+'/version').then(r=>r.json());
+        const v = versions[0];
+        const file = v && ((v.files||[]).find(f=>f.primary) || v.files[0]);
+        if (!file) throw new Error('no file');
+        const blob = await fetch(file.url).then(r=>r.blob());
+        await ingestZipFile(blob, ()=>{});
+        addToBuild(hit.project_id, { title: hit.title, icon: hit.icon_url, filename: file.filename, blob, dependencies: v.dependencies||[] });
+        added++;
+      } catch (e) { failed++; }
+    }
+    progressEl.textContent = 'Проверяю зависимости…';
+    let guard = 0;
+    while (guard++ < 6 && state.build.size < 300) {
+      const items = [...state.build.values()];
+      const missingDeps = [];
+      for (const it of items) for (const dep of it.dependencies) if (!state.build.has(dep.project_id) && !missingDeps.includes(dep.project_id)) missingDeps.push(dep.project_id);
+      if (!missingDeps.length) break;
+      let addedThisPass = false;
+      for (const depId of missingDeps) {
+        if (state.build.size >= 300) break;
+        progressEl.textContent = 'Докачиваю зависимость (проход ' + guard + ')…';
+        try {
+          const proj = await getExactProject(depId);
+          const versions = await fetch('https://api.modrinth.com/v2/project/'+depId+'/version').then(r=>r.json());
+          const v = versions[0];
+          const file = v && ((v.files||[]).find(f=>f.primary) || v.files[0]);
+          if (!file) continue;
+          const blob = await fetch(file.url).then(r=>r.blob());
+          await ingestZipFile(blob, ()=>{});
+          addToBuild(depId, { title: proj?proj.title:depId, icon: proj?proj.icon_url:null, filename: file.filename, blob, dependencies: v.dependencies||[] });
+          added++; addedThisPass = true;
+        } catch (e) { failed++; }
+      }
+      if (!addedThisPass) break;
+    }
+    rebuildAll();
+    if (el('tab-build').classList.contains('active')) renderBuildView();
+    progressEl.textContent = 'Готово: добавлено ' + added + ' мод(ов)' + (failed ? (', не получилось — ' + failed) : '') + '. Смотри вкладку «Сборка».';
+    showToast('Автосборка готова: ' + added + ' мод(ов) в «Сборке».');
+  } finally {
+    autobuildRunning = false; startBtn.disabled = false; startBtn.innerHTML = icon('dice') + ' Собрать!';
+  }
+}
+el('autobuild-start').addEventListener('click', autoAssembleBuild);
+
 let currentAuthorFilter = null;
 function renderAuthorChip() {
   const holder = el('author-filter-holder');
-  holder.innerHTML = currentAuthorFilter ? '<div class="author-chip">Автор: '+escapeHtml(currentAuthorFilter)+' <button id="author-chip-x">×</button></div>' : '';
+  holder.innerHTML = currentAuthorFilter ? '<div class="author-chip">Автор: '+escapeHtml(currentAuthorFilter)+' <button id="author-chip-x">'+icon('close','sm')+'</button></div>' : '';
   const x = document.getElementById('author-chip-x'); if (x) x.addEventListener('click', clearAuthorFilter);
 }
 function applyAuthorFilter(username) { currentAuthorFilter = username; el('mod-detail').classList.remove('active'); el('mod-grid').style.display='grid'; renderAuthorChip(); searchModrinth(el('modrinth-input').value.trim()); }
@@ -1277,7 +1434,7 @@ async function openModDetail(projectId, authorName) {
       const matches = selectedVer && (v.game_versions||[]).includes(selectedVer);
       html += '<div class="file-row" data-vid="'+v.id+'" data-url="'+encodeURIComponent(file.url)+'" data-name="'+encodeURIComponent(file.filename)+'">'+
         '<div><div class="fname">'+escapeHtml(file.filename)+'</div><div class="fmeta'+(matches?' match':'')+'">'+escapeHtml((v.game_versions||[]).slice(-3).join(', '))+' · '+escapeHtml((v.loaders||[]).join('/'))+' · '+Math.round((file.size||0)/1024)+' КБ'+(matches?' · совпадает с фильтром':'')+'</div></div>'+
-        '<div class="file-actions"><button class="btn dl-btn">Скачать</button><button class="btn primary add-btn">Добавить в библиотеку</button></div>'+
+        '<div class="file-actions"><button class="btn dl-btn btn-ic">'+icon('download')+' Скачать</button><button class="btn primary add-btn btn-ic">'+icon('plus')+' Добавить в библиотеку</button></div>'+
       '</div>';
     }
     det.innerHTML = html;
@@ -1298,16 +1455,16 @@ function downloadDirect(url, filename) {
   const a = document.createElement('a'); a.href=url; a.download=filename; a.target='_blank'; a.rel='noopener'; document.body.appendChild(a); a.click(); a.remove();
 }
 async function addModToLibrary(url, filename, btn, meta) {
-  const original = btn.textContent; btn.disabled = true; btn.textContent = 'Загружаем…';
+  const original = btn.innerHTML; btn.disabled = true; btn.innerHTML = icon('download','sm') + ' Загружаем…';
   try {
     const res = await fetch(url); if (!res.ok) throw new Error('bad response');
     const blob = await res.blob();
     const ok = await ingestZipFile(blob, ()=>{});
     if (meta) addToBuild(meta.projectId, { title: meta.title, icon: meta.icon, filename, blob, dependencies: meta.dependencies||[] });
     rebuildAll();
-    btn.textContent = ok > 0 ? 'Добавлено ✓' : 'Структур нет';
+    btn.innerHTML = ok > 0 ? (icon('plus','sm') + ' Добавлено') : 'Структур нет';
     showToast(filename + ': добавлено структур — ' + ok + (meta ? ', попало в сборку' : ''));
-  } catch (e) { btn.disabled = false; btn.textContent = original; showToast('Не смог скачать автоматически (CORS/сеть). Нажми «Скачать» и перетащи файл в библиотеку вручную.', true); }
+  } catch (e) { btn.disabled = false; btn.innerHTML = original; showToast('Не смог скачать автоматически (CORS/сеть). Нажми «Скачать» и перетащи файл в библиотеку вручную.', true); }
 }
 
 /* =========================================================
@@ -1344,7 +1501,7 @@ function renderBuildView() {
     card.innerHTML = '<img src="'+(it.icon||'')+'" loading="lazy" onerror="this.style.visibility=\'hidden\'"/>'+
       '<div class="bc-info"><div class="bc-name">'+escapeHtml(it.title)+'</div><div class="bc-file mono">'+escapeHtml(it.filename)+' · '+Math.round(it.size/1024)+' КБ</div>'+
       '<div class="bc-deps" id="bc-deps-'+it.projectId+'"></div></div>'+
-      '<button class="btn bc-remove" title="Убрать из сборки">×</button>';
+      '<button class="btn bc-remove" title="Убрать из сборки">'+icon('trash','sm')+'</button>';
     card.querySelector('.bc-remove').addEventListener('click', ()=> removeFromBuild(it.projectId));
     wrap.appendChild(card);
     renderDepsFor(it);
@@ -1360,7 +1517,7 @@ async function renderDepsFor(it) {
     const proj = await getExactProject(dep.project_id);
     if (state.build.has(dep.project_id)) { chip.remove(); continue; } // may have been added meanwhile
     chip.textContent = 'требует: ' + (proj ? proj.title : dep.project_id) + ' ';
-    const addBtn = document.createElement('button'); addBtn.className = 'dep-add'; addBtn.textContent = '+'; addBtn.title = 'Добавить зависимость в сборку';
+    const addBtn = document.createElement('button'); addBtn.className = 'dep-add'; addBtn.innerHTML = icon('plus','sm'); addBtn.title = 'Добавить зависимость в сборку';
     addBtn.addEventListener('click', async () => {
       addBtn.disabled = true;
       try {
@@ -1380,7 +1537,7 @@ async function renderDepsFor(it) {
 }
 el('build-export').addEventListener('click', async () => {
   if (!state.build.size) { showToast('Сборка пуста — сначала добавь моды во вкладке «Найти моды».', true); return; }
-  const btn = el('build-export'); const original = btn.textContent; btn.disabled = true; btn.textContent = 'Собираем .zip…';
+  const btn = el('build-export'); const original = btn.innerHTML; btn.disabled = true; btn.innerHTML = icon('package','sm') + ' Собираем .zip…';
   try {
     const zip = new JSZip();
     for (const it of state.build.values()) zip.file(it.filename, it.blob);
@@ -1389,7 +1546,7 @@ el('build-export').addEventListener('click', async () => {
     const a = document.createElement('a'); a.href = url; a.download = 'my-modpack.zip'; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(url), 30000);
     showToast('Сборка (' + state.build.size + ' мод(ов)) скачивается.');
-  } finally { btn.disabled = false; btn.textContent = original; }
+  } finally { btn.disabled = false; btn.innerHTML = original; }
 });
 </script>
 </body>
