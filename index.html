@@ -11,92 +11,57 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
   :root{
-    --bg:#0e1320;
-    --bg-grid:#16203a;
-    --panel:#141b2c;
-    --panel-2:#1a2338;
-    --border:#28324a;
-    --border-soft:#1f2841;
-    --text:#e7ecf6;
-    --muted:#8b96b3;
-    --accent:#ff8a3d;
-    --accent-dim:#7a4a26;
-    --ink:#5ec8d8;
-    --danger:#e5595f;
-    --ok:#4fbf7a;
-    --radius:10px;
-    --radius-lg:16px;
-    --ease:cubic-bezier(.22,.8,.28,1);
+    --bg:#0e1320; --bg-grid:#16203a; --panel:#141b2c; --panel-2:#1a2338;
+    --border:#28324a; --border-soft:#1f2841; --text:#e7ecf6; --muted:#8b96b3;
+    --accent:#ff8a3d; --accent-dim:#7a4a26; --ink:#5ec8d8; --danger:#e5595f; --ok:#4fbf7a;
+    --radius:10px; --radius-lg:16px; --ease:cubic-bezier(.22,.8,.28,1);
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
-    margin:0; background:var(--bg); color:var(--text);
-    font-family:'Inter',sans-serif; font-size:14px;
-    background-image:
-      linear-gradient(var(--bg-grid) 1px, transparent 1px),
-      linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
-    background-size:34px 34px;
-    background-position:-1px -1px;
+    margin:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:14px;
+    background-image:linear-gradient(var(--bg-grid) 1px, transparent 1px), linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+    background-size:34px 34px; background-position:-1px -1px;
   }
   #app{ display:flex; height:100vh; }
   h1,h2,h3{ font-family:'Space Grotesk',sans-serif; margin:0; }
   .mono{ font-family:'JetBrains Mono',monospace; }
-  button,select,input{ font-family:inherit; }
-  button{ cursor:pointer; }
+  button,select,input{ font-family:inherit; } button{ cursor:pointer; }
   ::-webkit-scrollbar{ width:9px; height:9px; }
   ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:5px; }
   ::-webkit-scrollbar-track{ background:transparent; }
-  @keyframes fadeUp{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:translateY(0); } }
-  @keyframes popIn{ from{ opacity:0; transform:scale(.97); } to{ opacity:1; transform:scale(1); } }
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
   @keyframes spin{ to{ transform:rotate(360deg); } }
   @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
 
-  /* ---------- Sidebar ---------- */
-  #sidebar{ width:300px; min-width:300px; background:var(--panel); border-right:1px solid var(--border); display:flex; flex-direction:column; }
-  .brand{ padding:18px 16px 12px; border-bottom:1px solid var(--border-soft); }
-  .brand h1{ font-size:18px; color:var(--text); letter-spacing:.2px; }
-  .brand p{ margin:4px 0 0; color:var(--muted); font-size:12px; line-height:1.5; }
-
-  .side-tabs{ display:flex; gap:6px; padding:10px 16px 0; }
-  .side-tab{
-    flex:1; background:transparent; border:1px solid var(--border); color:var(--muted);
-    padding:8px 10px; font-size:12.5px; border-radius:var(--radius);
-    transition:background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease);
-  }
+  #sidebar{ width:360px; min-width:360px; background:var(--panel); border-right:1px solid var(--border); display:flex; flex-direction:column; min-height:0; position:relative; }
+  .mini-topbar{ height:58px; min-height:58px; display:flex; align-items:center; gap:11px; padding:0 16px; border-bottom:1px solid var(--border-soft); }
+  .icon-btn{ width:36px; height:36px; flex:none; border-radius:11px; background:var(--panel-2); border:1px solid var(--border); color:var(--text); font-size:16px; display:flex; align-items:center; justify-content:center; transition:border-color .15s var(--ease), transform .15s var(--ease); }
+  .icon-btn:hover{ border-color:var(--ink); transform:translateY(-1px); }
+  .mini-topbar-title{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:19px; flex:1; }
+  .popover{ position:absolute; top:64px; left:16px; width:250px; background:var(--panel-2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:15px; box-shadow:0 16px 34px rgba(0,0,0,.5); z-index:45; opacity:0; transform:translateY(-6px) scale(.97); pointer-events:none; transition:opacity .18s var(--ease), transform .18s var(--ease); }
+  .popover.open{ opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+  .popover-title{ font-weight:600; font-size:13px; margin-bottom:11px; }
+  .popover-row{ display:flex; flex-direction:column; gap:7px; font-size:11.5px; color:var(--muted); margin-bottom:10px; }
+  .popover-row input[type=range]{ width:100%; accent-color:var(--accent); }
+  .brand-sub{ padding:12px 16px 14px; border-bottom:1px solid var(--border-soft); }
+  .brand-sub p{ margin:0; color:var(--muted); font-size:12.5px; line-height:1.55; }
+  .side-tabs{ display:flex; gap:6px; padding:12px 16px 0; }
+  .side-tab{ flex:1; background:transparent; border:1px solid var(--border); color:var(--muted); padding:9px 8px; font-size:12.5px; border-radius:var(--radius); transition:background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease); position:relative; }
   .side-tab.active{ color:var(--text); border-color:var(--ink); background:#122534; }
   .side-tab:hover:not(.active){ border-color:#3a4666; color:var(--text); }
-
-  .side-section{ padding:14px 16px; border-bottom:1px solid var(--border-soft); }
-  .dropzone{
-    border:1.5px dashed var(--border); border-radius:var(--radius-lg);
-    padding:16px 12px; text-align:center; color:var(--muted); font-size:12.5px;
-    transition:border-color .18s var(--ease), color .18s var(--ease), background .18s var(--ease);
-  }
+  .side-section{ padding:16px 18px; border-bottom:1px solid var(--border-soft); }
+  .dropzone{ border:1.5px dashed var(--border); border-radius:var(--radius-lg); padding:16px 12px; text-align:center; color:var(--muted); font-size:12.5px; transition:border-color .18s var(--ease), color .18s var(--ease), background .18s var(--ease); }
   .dropzone.drag{ border-color:var(--accent); color:var(--accent); background:rgba(255,138,61,.06); }
-  .dropzone button{
-    margin-top:8px; background:var(--accent); color:#1a0f06; border:none;
-    padding:8px 16px; border-radius:var(--radius); font-weight:600; font-size:12.5px;
-    transition:transform .15s var(--ease), filter .15s var(--ease);
-  }
+  .dropzone button{ margin-top:8px; background:var(--accent); color:#1a0f06; border:none; padding:8px 16px; border-radius:var(--radius); font-weight:600; font-size:12.5px; transition:transform .15s var(--ease), filter .15s var(--ease); }
   .dropzone button:hover{ filter:brightness(1.08); transform:translateY(-1px); }
-  .dropzone button:active{ transform:translateY(0) scale(.97); }
   .dropzone .hint{ margin-top:6px; color:#5c688a; font-size:11px; }
-
-  .search-box input, select.select{
-    width:100%; background:var(--panel-2); border:1px solid var(--border);
-    color:var(--text); padding:9px 11px; border-radius:var(--radius); font-size:13px;
-    transition:border-color .15s var(--ease), box-shadow .15s var(--ease);
-  }
+  .search-box input, select.select{ width:100%; background:var(--panel-2); border:1px solid var(--border); color:var(--text); padding:9px 11px; border-radius:var(--radius); font-size:13px; transition:border-color .15s var(--ease), box-shadow .15s var(--ease); }
   .search-box input:focus, select.select:focus{ outline:none; border-color:var(--ink); box-shadow:0 0 0 3px rgba(94,200,216,.12); }
-
-  #tree{ flex:1; overflow-y:auto; padding:6px 8px 16px; }
+  #lib-side, #find-side, #build-side{ display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
+  #tree{ flex:1; min-height:0; overflow-y:auto; padding:6px 8px 16px; }
   details.mod-node{ border-bottom:1px solid var(--border-soft); }
-  details.mod-node > summary{
-    list-style:none; cursor:pointer; padding:9px 8px; border-radius:var(--radius);
-    display:flex; align-items:center; justify-content:space-between;
-    color:var(--text); font-size:13px; font-weight:500; transition:background .15s var(--ease);
-  }
+  details.mod-node > summary{ list-style:none; cursor:pointer; padding:9px 8px; border-radius:var(--radius); display:flex; align-items:center; justify-content:space-between; color:var(--text); font-size:13px; font-weight:500; transition:background .15s var(--ease); }
   details.mod-node > summary:hover{ background:var(--panel-2); }
   details.mod-node > summary::-webkit-details-marker{ display:none; }
   details.mod-node > summary .chev{ color:var(--muted); font-size:11px; transition:transform .18s var(--ease); margin-right:6px; display:inline-block; }
@@ -104,10 +69,7 @@
   summary .name{ flex:1; display:flex; align-items:center; }
   .count-badge{ background:var(--panel-2); color:var(--muted); font-size:10.5px; padding:1px 8px; border-radius:20px; font-family:'JetBrains Mono',monospace; }
   details.cat-node{ margin:0 0 4px 22px; }
-  details.cat-node > summary{
-    list-style:none; cursor:pointer; padding:5px 6px; color:var(--ink); border-radius:var(--radius);
-    font-size:12px; display:flex; align-items:center; gap:6px; transition:background .15s var(--ease);
-  }
+  details.cat-node > summary{ list-style:none; cursor:pointer; padding:5px 6px; color:var(--ink); border-radius:var(--radius); font-size:12px; display:flex; align-items:center; gap:6px; transition:background .15s var(--ease); }
   details.cat-node > summary:hover{ background:var(--panel-2); }
   details.cat-node > summary::-webkit-details-marker{ display:none; }
   details.cat-node > summary .chev{ transition:transform .18s var(--ease); display:inline-block; }
@@ -116,24 +78,18 @@
   .struct-item:hover{ background:var(--panel-2); color:var(--text); }
   .empty-note{ color:var(--muted); font-size:12.5px; padding:20px 10px; text-align:center; line-height:1.6; }
 
-  /* ---------- Main ---------- */
-  #main{ flex:1; display:flex; flex-direction:column; min-width:0; }
-  #topbar{ height:52px; min-height:52px; border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 18px; gap:14px; background:rgba(20,27,44,.5); backdrop-filter:blur(4px); }
-  #topbar h2{ font-size:14.5px; color:var(--text); font-weight:600; }
-  #topbar .sub{ color:var(--muted); font-size:12px; }
+  #main{ flex:1; display:flex; flex-direction:column; min-width:0; min-height:0; }
+  #topbar{ height:58px; min-height:58px; border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 20px; gap:14px; background:rgba(20,27,44,.5); backdrop-filter:blur(4px); }
+  #topbar h2{ font-size:15.5px; font-weight:600; }
+  #topbar .sub{ color:var(--muted); font-size:12.5px; }
   .spacer{ flex:1; }
-  .warn-chip{ background:#2c1f14; border:1px solid var(--accent-dim); color:var(--accent); font-size:12px; padding:6px 12px; border-radius:var(--radius); animation:fadeUp .25s var(--ease); }
+  .warn-chip{ background:#2c1f14; border:1px solid var(--accent-dim); color:var(--accent); font-size:12px; padding:7px 13px; border-radius:var(--radius); animation:fadeUp .25s var(--ease); transition:filter .15s var(--ease), transform .15s var(--ease); }
+  .warn-chip:hover{ filter:brightness(1.15); transform:translateY(-1px); }
   .legend{ display:flex; align-items:center; gap:10px; font-size:11px; color:var(--muted); }
   .legend .sw{ width:9px; height:9px; display:inline-block; border-radius:3px; margin-right:4px; vertical-align:-1px; }
-
-  #content{ flex:1; overflow-y:auto; padding:20px; }
-  #grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); gap:14px; }
-  .tile{
-    aspect-ratio:1/1; background:var(--panel); border:1px solid var(--border);
-    border-radius:var(--radius-lg); position:relative; overflow:hidden; cursor:pointer;
-    transition:border-color .18s var(--ease), transform .18s var(--ease), box-shadow .18s var(--ease);
-    animation:fadeUp .3s var(--ease) both;
-  }
+  #content{ flex:1; min-height:0; overflow-y:auto; padding:24px; }
+  #grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(195px, 1fr)); gap:16px; }
+  .tile{ aspect-ratio:1/1; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-lg); position:relative; overflow:hidden; cursor:pointer; transition:border-color .18s var(--ease), transform .18s var(--ease), box-shadow .18s var(--ease); animation:fadeUp .3s var(--ease) both; }
   .tile:hover{ border-color:var(--accent); transform:translateY(-3px); box-shadow:0 10px 26px rgba(0,0,0,.4); }
   .tile canvas, .tile img{ width:100%; height:100%; display:block; object-fit:contain; opacity:0; transition:opacity .4s var(--ease); }
   .tile img.loaded{ opacity:1; }
@@ -145,37 +101,17 @@
   .tile.hidden{ display:none; }
   .tile .flag{ position:absolute; top:8px; right:8px; width:8px; height:8px; border-radius:50%; background:var(--danger); box-shadow:0 0 0 3px rgba(0,0,0,.35); }
 
-  /* ---------- Modal ---------- */
-  #modal-overlay{
-    position:fixed; inset:0; background:rgba(6,9,16,.82); backdrop-filter:blur(2px);
-    display:flex; align-items:center; justify-content:center; z-index:50;
-    opacity:0; pointer-events:none; transition:opacity .22s var(--ease);
-  }
-  #modal-overlay.open{ opacity:1; pointer-events:auto; }
-  #modal{
-    width:min(1080px, 94vw); height:min(640px, 88vh);
-    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-lg);
-    display:flex; overflow:hidden; transform:scale(.96); transition:transform .24s var(--ease);
-  }
+  #modal-overlay, #missing-overlay{ position:fixed; inset:0; background:rgba(6,9,16,.82); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; z-index:50; opacity:0; pointer-events:none; transition:opacity .22s var(--ease); }
+  #modal-overlay.open, #missing-overlay.open{ opacity:1; pointer-events:auto; }
+  #modal{ width:min(1080px, 94vw); height:min(640px, 88vh); background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-lg); display:flex; overflow:hidden; transform:scale(.96); transition:transform .24s var(--ease); }
   #modal-overlay.open #modal{ transform:scale(1); }
   #modal-viewport{ flex:1; position:relative; background:radial-gradient(circle at 50% 40%, #182238, #0c1120); }
   #modal-viewport canvas{ width:100%; height:100%; display:block; touch-action:none; }
-  #modal-viewport .hint-overlay{
-    position:absolute; left:12px; bottom:12px; color:var(--muted); font-size:11px;
-    background:rgba(10,13,22,.65); padding:6px 11px; border-radius:var(--radius); line-height:1.5;
-  }
-  #modal-reset{
-    position:absolute; top:12px; left:12px; background:rgba(10,13,22,.65); color:var(--text);
-    border:1px solid var(--border); padding:6px 12px; border-radius:var(--radius); font-size:11.5px;
-    transition:border-color .15s var(--ease), background .15s var(--ease);
-  }
+  #modal-viewport .hint-overlay{ position:absolute; left:12px; bottom:12px; color:var(--muted); font-size:11px; background:rgba(10,13,22,.65); padding:6px 11px; border-radius:var(--radius); line-height:1.5; }
+  #modal-reset{ position:absolute; top:12px; left:12px; background:rgba(10,13,22,.65); color:var(--text); border:1px solid var(--border); padding:6px 12px; border-radius:var(--radius); font-size:11.5px; transition:border-color .15s var(--ease), background .15s var(--ease); }
   #modal-reset:hover{ border-color:var(--ink); background:rgba(10,13,22,.85); }
-  #modal-close{
-    position:absolute; top:10px; right:10px; background:var(--panel-2); color:var(--text);
-    border:1px solid var(--border); width:32px; height:32px; border-radius:50%; font-size:15px;
-    transition:border-color .15s var(--ease), transform .15s var(--ease), background .15s var(--ease);
-  }
-  #modal-close:hover{ border-color:var(--danger); transform:rotate(90deg); }
+  #modal-close, #missing-close{ position:absolute; top:10px; right:10px; background:var(--panel-2); color:var(--text); border:1px solid var(--border); width:32px; height:32px; border-radius:50%; font-size:15px; transition:border-color .15s var(--ease), transform .15s var(--ease), background .15s var(--ease); }
+  #modal-close:hover, #missing-close:hover{ border-color:var(--danger); transform:rotate(90deg); }
   #modal-side{ width:320px; min-width:320px; border-left:1px solid var(--border); display:flex; flex-direction:column; overflow-y:auto; }
   .ms-block{ padding:16px 18px; border-bottom:1px solid var(--border-soft); animation:fadeUp .3s var(--ease) both; }
   .ms-block h3{ font-size:16px; margin-bottom:3px; }
@@ -184,9 +120,8 @@
   .stat-row b{ color:var(--text); font-family:'JetBrains Mono',monospace; font-weight:500; }
   .btable{ width:100%; border-collapse:collapse; }
   .btable td{ padding:5px 0; font-size:12px; border-bottom:1px solid var(--border-soft); }
-  .btable td.n{ color:var(--text); }
-  .btable td.c{ color:var(--muted); text-align:right; font-family:'JetBrains Mono',monospace; }
-  .sw-dot{ width:9px; height:9px; border-radius:3px; display:inline-block; margin-right:7px; vertical-align:-1px; background-size:cover; }
+  .btable td.n{ color:var(--text); } .btable td.c{ color:var(--muted); text-align:right; font-family:'JetBrains Mono',monospace; }
+  .sw-dot{ width:9px; height:9px; border-radius:3px; display:inline-block; margin-right:7px; vertical-align:-1px; }
   .missing-box{ background:#2a1616; border:1px solid #5a2a2a; border-radius:var(--radius); padding:12px; }
   .missing-box .mrow{ display:flex; justify-content:space-between; font-size:12px; padding:3px 0; color:var(--muted); }
   .missing-box .mrow b{ color:var(--danger); font-family:'JetBrains Mono',monospace; }
@@ -195,52 +130,60 @@
   .mm-icon{ width:34px; height:34px; border-radius:8px; background:var(--panel); flex:none; object-fit:cover; }
   .mm-icon.ph{ display:flex; align-items:center; justify-content:center; }
   .mm-icon.ph::after{ content:''; width:14px; height:14px; border-radius:50%; border:2px solid var(--border); border-top-color:var(--ink); animation:spin .8s linear infinite; }
-  .mm-info{ flex:1; min-width:0; }
-  .mm-name{ font-size:12px; color:var(--text); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mm-info{ flex:1; min-width:0; } .mm-name{ font-size:12px; color:var(--text); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .mm-sub{ font-size:11px; color:var(--muted); margin-top:3px; display:flex; align-items:center; }
   .mm-btn{ padding:5px 11px; font-size:11px; }
 
-  /* ---------- Find mods ---------- */
-  #find-panel{ display:none; }
-  #find-panel.active{ display:block; animation:fadeUp .25s var(--ease); }
-  .mod-search{ padding:14px 16px; display:flex; flex-direction:column; gap:8px; }
-  .mod-search input, .mod-search select{
-    width:100%; background:var(--panel-2); border:1px solid var(--border);
-    color:var(--text); padding:9px 11px; border-radius:var(--radius); font-size:13px;
-    transition:border-color .15s var(--ease);
-  }
-  .mod-search input:focus, .mod-search select:focus{ outline:none; border-color:var(--ink); }
-  #mod-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr)); gap:12px; padding:4px 20px 20px; }
-  .mod-card{
-    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-lg);
-    padding:13px; display:flex; gap:10px; cursor:pointer; animation:fadeUp .3s var(--ease) both;
-    transition:border-color .18s var(--ease), transform .18s var(--ease);
-  }
+  #missing-panel{ width:min(460px,92vw); max-height:74vh; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; display:flex; flex-direction:column; transform:scale(.96); transition:transform .22s var(--ease); }
+  #missing-overlay.open #missing-panel{ transform:scale(1); }
+  .mp-head{ padding:16px 18px; border-bottom:1px solid var(--border-soft); position:relative; }
+  .mp-head p{ margin:4px 0 0; color:var(--muted); font-size:12px; }
+  #missing-list{ padding:12px 18px 18px; overflow-y:auto; }
+
+  #find-panel, #build-panel{ display:none; }
+  #find-panel.active, #build-panel.active{ display:block; animation:fadeUp .25s var(--ease); }
+  .mod-search{ padding:16px 18px; display:flex; flex-direction:column; gap:10px; }
+  .mod-search input{ width:100%; background:var(--panel-2); border:1px solid var(--border); color:var(--text); padding:10px 12px; border-radius:var(--radius); font-size:13.5px; transition:border-color .15s var(--ease); }
+  .mod-search input:focus{ outline:none; border-color:var(--ink); }
+  .ddown{ position:relative; }
+  .ddown-btn{ width:100%; text-align:left; background:var(--panel-2); border:1px solid var(--border); color:var(--text); padding:10px 12px; border-radius:var(--radius); font-size:13px; display:flex; align-items:center; justify-content:space-between; gap:8px; transition:border-color .15s var(--ease); }
+  .ddown-btn:hover{ border-color:var(--border-soft); }
+  .ddown.open .ddown-btn{ border-color:var(--ink); }
+  .ddown-btn.has-value{ color:var(--ink); border-color:var(--ink); }
+  .ddown-btn-label{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ddown-chev{ color:var(--muted); font-size:10px; flex:none; transition:transform .18s var(--ease); }
+  .ddown.open .ddown-chev{ transform:rotate(180deg); }
+  .ddown-panel{ position:absolute; left:0; right:0; top:calc(100% + 6px); background:var(--panel-2); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 14px 30px rgba(0,0,0,.5); max-height:0; overflow:hidden; opacity:0; transform:translateY(-6px); transition:max-height .22s var(--ease), opacity .18s var(--ease), transform .18s var(--ease); z-index:35; }
+  .ddown.open .ddown-panel{ max-height:260px; opacity:1; transform:translateY(0); overflow-y:auto; }
+  .ddown-opt{ padding:9px 12px; font-size:12.5px; color:var(--text); cursor:pointer; transition:background .12s var(--ease); }
+  .ddown-opt:hover{ background:var(--panel); }
+  .ddown-opt.active{ color:var(--ink); background:#122534; }
+  .author-chip{ display:inline-flex; align-items:center; gap:8px; background:var(--panel-2); border:1px solid var(--ink); color:var(--ink); font-size:11.5px; padding:6px 11px; border-radius:20px; margin:0 16px 12px; }
+  .author-chip button{ background:none; border:none; color:var(--ink); font-size:13px; padding:0; line-height:1; }
+  #mod-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(235px,1fr)); gap:14px; padding:6px 20px 20px; }
+  .mod-card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-lg); padding:15px; display:flex; gap:11px; cursor:pointer; animation:fadeUp .3s var(--ease) both; transition:border-color .18s var(--ease), transform .18s var(--ease); }
   .mod-card:hover{ border-color:var(--ink); transform:translateY(-2px); }
-  .mod-card img{ width:44px; height:44px; border-radius:10px; background:var(--panel-2); flex:none; }
-  .mod-card .mi{ min-width:0; }
-  .mod-card .mi h4{ font-size:13px; color:var(--text); margin:0 0 3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mod-card img{ width:48px; height:48px; border-radius:11px; background:var(--panel-2); flex:none; }
+  .mod-card .mi{ min-width:0; } .mod-card .mi h4{ font-size:13.5px; margin:0 0 3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .mod-card .mi p{ font-size:11.5px; color:var(--muted); margin:0; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .mod-card .dl{ font-size:10.5px; color:#5c688a; margin-top:5px; font-family:'JetBrains Mono',monospace; }
 
-  #mod-detail{ display:none; padding:20px; max-width:760px; animation:fadeUp .25s var(--ease); }
+  #mod-detail{ display:none; padding:24px; max-width:800px; margin:0 auto; animation:fadeUp .25s var(--ease); }
   #mod-detail.active{ display:block; }
   .md-head{ display:flex; gap:16px; align-items:center; margin-bottom:6px; }
   .md-head img{ width:64px; height:64px; border-radius:16px; background:var(--panel-2); }
-  .md-head h2{ font-size:20px; }
-  .md-head .author{ color:var(--muted); font-size:12.5px; margin-top:3px; }
+  .md-head h2{ font-size:21px; } .md-head .author{ color:var(--muted); font-size:12.5px; margin-top:3px; }
+  .author-link{ color:var(--ink); cursor:pointer; text-decoration:underline; text-underline-offset:2px; transition:opacity .15s; }
+  .author-link:hover{ opacity:.75; }
   .back-link{ color:var(--ink); font-size:12.5px; margin-bottom:14px; display:inline-block; cursor:pointer; transition:opacity .15s; }
   .back-link:hover{ opacity:.75; }
   .md-desc{ color:var(--muted); font-size:13px; line-height:1.6; margin:14px 0 18px; }
-  .file-row{
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
-    padding:12px 15px; background:var(--panel); border:1px solid var(--border);
-    border-radius:var(--radius); margin-bottom:8px; transition:border-color .15s var(--ease);
-  }
+  .gallery-strip{ display:flex; gap:10px; overflow-x:auto; padding-bottom:8px; margin-bottom:18px; }
+  .gallery-strip img{ height:130px; border-radius:var(--radius); flex:none; border:1px solid var(--border); }
+  .file-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 15px; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:8px; transition:border-color .15s var(--ease); }
   .file-row:hover{ border-color:var(--border-soft); }
   .file-row .fname{ font-size:12.5px; color:var(--text); font-family:'JetBrains Mono',monospace; }
-  .file-row .fmeta{ font-size:11px; color:var(--muted); margin-top:2px; }
-  .file-row .fmeta.match{ color:var(--ok); }
+  .file-row .fmeta{ font-size:11px; color:var(--muted); margin-top:2px; } .file-row .fmeta.match{ color:var(--ok); }
   .file-actions{ display:flex; gap:8px; flex:none; }
   .btn{ border-radius:var(--radius); padding:8px 13px; font-size:12px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); transition:border-color .15s var(--ease), transform .15s var(--ease), filter .15s var(--ease); }
   .btn:hover:not(:disabled){ border-color:var(--ink); transform:translateY(-1px); }
@@ -248,15 +191,23 @@
   .btn.primary:hover:not(:disabled){ filter:brightness(1.08); }
   .btn:disabled{ opacity:.5; cursor:default; transform:none; }
 
-  #toasts{ position:fixed; right:18px; bottom:18px; display:flex; flex-direction:column; gap:8px; z-index:60; }
-  .toast{
-    background:var(--panel-2); border:1px solid var(--border); color:var(--text);
-    padding:11px 15px; border-radius:var(--radius); font-size:12.5px; max-width:340px;
-    box-shadow:0 8px 24px rgba(0,0,0,.4); animation:fadeUp .25s var(--ease);
-    transition:opacity .3s var(--ease), transform .3s var(--ease);
-  }
-  .toast.err{ border-color:#5a2a2a; color:#f0b9b9; }
+  #build-side-info{ padding:14px 16px; color:var(--muted); font-size:12px; line-height:1.6; }
+  #build-export{ width:100%; margin-top:10px; }
+  #build-count-badge{ display:inline-block; margin-left:5px; }
+  #build-view{ padding:0 20px 20px; }
+  .build-card{ display:flex; align-items:flex-start; gap:12px; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-lg); padding:13px; margin-bottom:10px; animation:fadeUp .25s var(--ease) both; }
+  .build-card img{ width:40px; height:40px; border-radius:9px; background:var(--panel-2); flex:none; }
+  .bc-info{ flex:1; min-width:0; }
+  .bc-name{ font-size:13px; font-weight:500; }
+  .bc-file{ font-size:11px; color:var(--muted); margin-top:2px; }
+  .bc-deps{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .dep-chip{ display:inline-flex; align-items:center; gap:6px; background:#2a1616; border:1px solid #5a2a2a; color:#e5a5a5; font-size:10.5px; padding:3px 8px; border-radius:20px; }
+  .dep-add{ background:var(--accent); color:#1a0f06; border:none; width:15px; height:15px; border-radius:50%; font-size:10px; line-height:1; display:flex; align-items:center; justify-content:center; font-weight:700; }
+  .bc-remove{ width:26px; height:26px; padding:0; border-radius:50%; flex:none; font-size:13px; }
 
+  #toasts{ position:fixed; right:18px; bottom:18px; display:flex; flex-direction:column; gap:8px; z-index:60; }
+  .toast{ background:var(--panel-2); border:1px solid var(--border); color:var(--text); padding:11px 15px; border-radius:var(--radius); font-size:12.5px; max-width:340px; box-shadow:0 8px 24px rgba(0,0,0,.4); animation:fadeUp .25s var(--ease); transition:opacity .3s var(--ease), transform .3s var(--ease); }
+  .toast.err{ border-color:#5a2a2a; color:#f0b9b9; }
   #progress-line{ height:2px; background:var(--border-soft); position:relative; overflow:hidden; display:none; }
   #progress-line.on{ display:block; }
   #progress-line i{ position:absolute; left:0; top:0; bottom:0; background:var(--accent); width:0%; transition:width .2s var(--ease); }
@@ -264,16 +215,23 @@
 </head>
 <body>
 <div id="app">
-
   <aside id="sidebar">
-    <div class="brand">
-      <h1>Voxel&nbsp;Vault</h1>
-      <p>Все структуры твоих модов в одном месте — свернуть по моду, найти по названию, покрутить в 3D.</p>
+    <div class="mini-topbar">
+      <button class="icon-btn" id="settings-btn" title="Настройки">⚙</button>
+      <div class="mini-topbar-title">Voxel&nbsp;Vault</div>
     </div>
-
+    <div id="settings-popover" class="popover">
+      <div class="popover-title">Настройки</div>
+      <label class="popover-row">Параллельных превью: <b id="concurrency-val" class="mono">2</b>
+        <input type="range" id="concurrency-range" min="1" max="4" value="2" step="1">
+      </label>
+      <button class="btn" id="clear-cache-btn" style="width:100%;">Очистить кэш превью</button>
+    </div>
+    <div class="brand-sub"><p>Все структуры твоих модов в одном месте — свернуть по моду, найти по названию, покрутить в 3D.</p></div>
     <div class="side-tabs">
       <button class="side-tab active" id="tab-lib">Библиотека</button>
       <button class="side-tab" id="tab-find">Найти моды</button>
+      <button class="side-tab" id="tab-build">Сборка<span id="build-count-badge" class="count-badge" style="display:none;">0</span></button>
     </div>
 
     <div id="lib-side">
@@ -284,11 +242,7 @@
           <div class="hint">Разбирается прямо в браузере, никуда не отправляется</div>
         </div>
       </div>
-      <div class="side-section" style="border-bottom:none;">
-        <div class="search-box">
-          <input id="search-input" type="text" placeholder="Поиск по структурам…" />
-        </div>
-      </div>
+      <div class="side-section" style="border-bottom:none;"><div class="search-box"><input id="search-input" type="text" placeholder="Поиск по структурам…" /></div></div>
       <div id="progress-line"><i></i></div>
       <div id="tree"><div class="empty-note">Пока пусто.<br>Загрузи мод(ы), и здесь появится дерево структур.</div></div>
     </div>
@@ -296,12 +250,19 @@
     <div id="find-side" style="display:none;">
       <div class="mod-search">
         <input id="modrinth-input" type="text" placeholder="Название мода на Modrinth…" />
-        <select id="version-filter" class="select">
-          <option value="">Любая версия Minecraft</option>
-        </select>
+        <div id="version-dropdown-mount"></div>
+        <div id="loader-dropdown-mount"></div>
+        <div id="category-dropdown-mount"></div>
       </div>
-      <div style="padding:0 16px 14px; color:var(--muted); font-size:11.5px; line-height:1.5;">
-        Ищет по открытому API Modrinth. CurseForge отсюда напрямую не тянется — у них закрытый API с ключом на сервере.
+      <div id="author-filter-holder"></div>
+      <div style="padding:0 16px 14px; color:var(--muted); font-size:11.5px; line-height:1.5;">Ищет по открытому API Modrinth. CurseForge отсюда напрямую не тянется — у них закрытый API с ключом на сервере.</div>
+    </div>
+
+    <div id="build-side" style="display:none;">
+      <div id="build-side-info">
+        Сюда попадают моды, которые ты добавил через «Найти моды». Когда наберёшь нужный набор — скачай всё одним .zip и закинь в папку <span class="mono">mods</span>.
+        Для каждого мода показываю обязательные зависимости, которых не хватает в сборке — жми «+», чтобы подтянуть их тоже.
+        <button class="btn primary" id="build-export">Скачать сборку .zip</button>
       </div>
     </div>
   </aside>
@@ -316,18 +277,13 @@
         <span><span class="sw" style="background:#c1663b"></span>мод без текстуры</span>
         <span><span class="sw" style="background:repeating-linear-gradient(45deg,#ff8a3d,#ff8a3d 3px,#3a2612 3px,#3a2612 6px)"></span>нет мода</span>
       </div>
-      <div class="warn-chip" id="warn-chip" style="display:none;"></div>
+      <button class="warn-chip" id="warn-chip" style="display:none;"></button>
     </div>
 
     <div id="content">
-      <div id="lib-view">
-        <div id="grid"></div>
-      </div>
-
-      <div id="find-panel">
-        <div id="mod-grid"></div>
-        <div id="mod-detail"></div>
-      </div>
+      <div id="lib-view"><div id="grid"></div></div>
+      <div id="find-panel"><div id="mod-grid"></div><div id="mod-detail"></div></div>
+      <div id="build-panel"><div id="build-view"></div></div>
     </div>
   </main>
 </div>
@@ -344,11 +300,18 @@
   </div>
 </div>
 
+<div id="missing-overlay">
+  <div id="missing-panel">
+    <div class="mp-head"><h3>Не хватает модов</h3><p>Собрано по всей загруженной библиотеке структур</p><button id="missing-close">×</button></div>
+    <div id="missing-list"></div>
+  </div>
+</div>
+
 <div id="toasts"></div>
 
 <script>
 /* =========================================================
-   PART 1 — NBT parsing (tested core, unchanged)
+   PART 1 — NBT parsing
    ========================================================= */
 class NBTReader {
   constructor(bytes) { this.view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength); this.bytes = bytes; this.pos = 0; }
@@ -362,12 +325,10 @@ class NBTReader {
   byteArray() { const len=this.i32(); const a=this.bytes.subarray(this.pos,this.pos+len); this.pos+=len; return a; }
   intArray() { const len=this.i32(); const o=new Array(len); for(let i=0;i<len;i++) o[i]=this.i32(); return o; }
   longArray() { const len=this.i32(); const o=new Array(len); for(let i=0;i<len;i++) o[i]=this.i64(); return o; }
-  payload(t) {
-    switch(t){ case 1:return this.u8(); case 2:return this.i16(); case 3:return this.i32(); case 4:return this.i64();
-      case 5:return this.f32(); case 6:return this.f64(); case 7:return this.byteArray(); case 8:return this.str();
-      case 9:return this.list(); case 10:return this.compound(); case 11:return this.intArray(); case 12:return this.longArray();
-      default: throw new Error('Unknown NBT tag id '+t); }
-  }
+  payload(t) { switch(t){ case 1:return this.u8(); case 2:return this.i16(); case 3:return this.i32(); case 4:return this.i64();
+    case 5:return this.f32(); case 6:return this.f64(); case 7:return this.byteArray(); case 8:return this.str();
+    case 9:return this.list(); case 10:return this.compound(); case 11:return this.intArray(); case 12:return this.longArray();
+    default: throw new Error('Unknown NBT tag id '+t); } }
   list() { const et=this.u8(); const len=this.i32(); const o=[]; for(let i=0;i<len;i++){ if(et===0) continue; o.push(this.payload(et)); } return o; }
   compound() { const o={}; while(true){ const t=this.u8(); if(t===0) break; const n=this.str(); o[n]=this.payload(t); } return o; }
   readNamedRoot() { const t=this.u8(); if(t!==10) throw new Error('root is not a compound'); this.str(); return this.compound(); }
@@ -378,15 +339,11 @@ function parseStructureNBT(arrayBuffer) {
 }
 
 /* =========================================================
-   PART 2 — Block classification (vanilla rules + dynamic resolution)
+   PART 2 — Block colour classification (dynamic, texture-aware)
    ========================================================= */
-const MC_DYE_COLORS = {
-  white:'#e9ecec', orange:'#f07613', magenta:'#bd44b3', light_blue:'#3aafd9',
-  yellow:'#f8c527', lime:'#70b919', pink:'#ed8dac', gray:'#3e4447',
-  light_gray:'#8e8e86', cyan:'#158991', purple:'#792aac', blue:'#35399d',
-  brown:'#724728', green:'#546d1b', red:'#a12722', black:'#141519'
-};
-/* [regex, color, pattern]  pattern in {speckle, grain, grid, smooth} */
+const MC_DYE_COLORS = { white:'#e9ecec', orange:'#f07613', magenta:'#bd44b3', light_blue:'#3aafd9', yellow:'#f8c527',
+  lime:'#70b919', pink:'#ed8dac', gray:'#3e4447', light_gray:'#8e8e86', cyan:'#158991', purple:'#792aac', blue:'#35399d',
+  brown:'#724728', green:'#546d1b', red:'#a12722', black:'#141519' };
 const VANILLA_RULES = [
   [/^minecraft:(deepslate|blackstone)/, '#3b3b40', 'speckle'],
   [/^minecraft:(stone|cobblestone|andesite|tuff|calcite)/, '#8a8a8a', 'speckle'],
@@ -428,9 +385,7 @@ const VANILLA_RULES = [
   [/^minecraft:(hay_block|straw)/, '#d8b23a', 'grain'],
 ];
 function resolveVanillaRule(id) {
-  for (const dye of Object.keys(MC_DYE_COLORS)) {
-    if (id.startsWith('minecraft:' + dye + '_')) return { color: MC_DYE_COLORS[dye], pattern:'smooth' };
-  }
+  for (const dye of Object.keys(MC_DYE_COLORS)) { if (id.startsWith('minecraft:' + dye + '_')) return { color: MC_DYE_COLORS[dye], pattern:'smooth' }; }
   for (const [re, color, pattern] of VANILLA_RULES) { if (re.test(id)) return { color, pattern: pattern||'speckle' }; }
   return { color: hashColor(id), pattern:'speckle' };
 }
@@ -445,22 +400,153 @@ function resolveBlockMaterialSync(name) {
   const shortPath = name.split(':')[1] || '';
   const texKey = ns + ':' + shortPath;
   if (state.textureIndex.has(texKey)) return { kind:'texture', key:'TEX:'+texKey, texKey, ns };
-  if (ns === 'minecraft') {
-    const rule = resolveVanillaRule(name);
-    return { kind:'procedural', color:rule.color, pattern:rule.pattern, key:'PVAN:'+rule.color+':'+rule.pattern };
-  }
-  if (state.knownModIds.has(ns)) {
-    const color = hashColor(name);
-    return { kind:'procedural', color, pattern:'speckle', key:'PMOD:'+color, ns };
-  }
+  if (ns === 'minecraft') { const rule = resolveVanillaRule(name); return { kind:'procedural', color:rule.color, pattern:rule.pattern, key:'PVAN:'+rule.color+':'+rule.pattern }; }
+  if (state.knownModIds.has(ns)) { const color = hashColor(name); return { kind:'procedural', color, pattern:'speckle', key:'PMOD:'+color, ns }; }
   return { kind:'missing', ns, key:'MISSING' };
 }
 
 /* =========================================================
-   PART 3 — Archive scanning (structures + textures)
+   PART 2b — Block SHAPE resolution: suffix heuristics + real
+   blockstate/model JSON parsing for modded custom shapes
+   ========================================================= */
+const FACING_ANGLES = { south:0, west:Math.PI/2, north:Math.PI, east:-Math.PI/2 };
+function getShapeRecipeHeuristic(name, props) {
+  props = props || {};
+  const facing = props.facing || 'south';
+  const angle = FACING_ANGLES[facing] != null ? FACING_ANGLES[facing] : 0;
+  if (/_slab$/.test(name)) {
+    if (props.type === 'double') return { rotationY:0, boxes:[{size:[1,1,1], offset:[0,0,0]}] };
+    const top = props.type === 'top';
+    return { rotationY:0, boxes:[{size:[1,0.5,1], offset:[0, top?0.25:-0.25, 0]}] };
+  }
+  if (/_stairs$/.test(name)) {
+    const upsideDown = props.half === 'top';
+    const lowerY = upsideDown ? 0.25 : -0.25, upperY = upsideDown ? -0.25 : 0.25;
+    return { rotationY:angle, boxes:[ {size:[1,0.5,1], offset:[0,lowerY,0]}, {size:[1,0.5,0.5], offset:[0,upperY,0.25]} ] };
+  }
+  if (/_wall$/.test(name)) return { rotationY:0, boxes:[{size:[0.3,1,0.3], offset:[0,0,0]}] };
+  if (/_fence_gate$/.test(name)) return { rotationY:angle, boxes:[{size:[0.2,1,1], offset:[0,0,0]}] };
+  if (/_fence$/.test(name)) return { rotationY:0, boxes:[{size:[0.25,1,0.25], offset:[0,0,0]}] };
+  if (/_(pane|bars)$/.test(name)) return { rotationY:0, boxes:[{size:[1,1,0.14], offset:[0,0,0]}] };
+  if (/_carpet$/.test(name)) return { rotationY:0, boxes:[{size:[1,0.09,1], offset:[0,-0.455,0]}] };
+  if (/_trapdoor$/.test(name)) { const top = props.half === 'top'; return { rotationY:0, boxes:[{size:[1,0.16,1], offset:[0, top?0.42:-0.42, 0]}] }; }
+  if (/_door$/.test(name)) return { rotationY:angle, boxes:[{size:[1,1,0.18], offset:[0,0,0.41]}] };
+  return { rotationY:0, boxes:[{size:[1,1,1], offset:[0,0,0]}] };
+}
+
+function matchesVariantKey(variantKeyStr, properties) {
+  if (!variantKeyStr) return true;
+  for (const part of variantKeyStr.split(',')) {
+    const [k, v] = part.split('=');
+    if (!k) continue;
+    if ((properties[k] ?? '') !== v) return false;
+  }
+  return true;
+}
+function pickModelRefs(blockstateJson, properties) {
+  if (blockstateJson.variants) {
+    for (const key of Object.keys(blockstateJson.variants)) {
+      if (matchesVariantKey(key, properties)) {
+        let v = blockstateJson.variants[key];
+        if (Array.isArray(v)) v = v[0];
+        return v && v.model ? [v.model] : [];
+      }
+    }
+    return [];
+  }
+  if (blockstateJson.multipart) {
+    const refs = [];
+    for (const part of blockstateJson.multipart) {
+      let matched = true;
+      if (part.when) {
+        if (part.when.OR) matched = part.when.OR.some(cond => Object.keys(cond).every(k => (properties[k] ?? '') === cond[k]));
+        else matched = Object.keys(part.when).every(k => (properties[k] ?? '') === part.when[k]);
+      }
+      if (matched) { let apply = part.apply; if (Array.isArray(apply)) apply = apply[0]; if (apply && apply.model) refs.push(apply.model); }
+    }
+    return refs;
+  }
+  return [];
+}
+function normalizeModelKey(ref, fallbackNs) {
+  let ns, path;
+  if (ref.includes(':')) { [ns, path] = ref.split(':'); } else { ns = fallbackNs.split(':')[0]; path = ref; }
+  path = path.replace(/^block\//, '');
+  return ns + ':' + path;
+}
+function elementsToBoxes(elements) {
+  return elements.map(el => {
+    const from = el.from, to = el.to;
+    return {
+      size: [(to[0]-from[0])/16, (to[1]-from[1])/16, (to[2]-from[2])/16],
+      offset: [ (from[0]+to[0])/32 - 0.5, (from[1]+to[1])/32 - 0.5, (from[2]+to[2])/32 - 0.5 ],
+    };
+  }).filter(b => b.size[0] > 0.001 && b.size[1] > 0.001 && b.size[2] > 0.001);
+}
+
+const jsonEntryCache = new Map();
+async function readJSONEntry(mapIndex, key) {
+  if (jsonEntryCache.has(key)) return jsonEntryCache.get(key);
+  const entry = mapIndex.get(key);
+  const p = (async () => {
+    if (!entry) return null;
+    try { const text = await entry.async('string'); return JSON.parse(text); } catch(e) { return null; }
+  })();
+  jsonEntryCache.set(key, p);
+  return p;
+}
+async function loadModelChainElements(startKey, maxDepth) {
+  let key = startKey;
+  for (let depth = 0; depth < (maxDepth||6); depth++) {
+    const model = await readJSONEntry(state.modelIndex, key);
+    if (!model) return null;
+    if (model.elements && model.elements.length) return model.elements;
+    if (!model.parent) return null;
+    key = normalizeModelKey(model.parent, key);
+  }
+  return null;
+}
+async function resolveCustomShapeElements(name, properties) {
+  const ns = name.split(':')[0];
+  const path = name.split(':')[1] || '';
+  const bsKey = ns + ':' + path;
+  if (!state.blockstateIndex.has(bsKey)) return null;
+  const bs = await readJSONEntry(state.blockstateIndex, bsKey);
+  if (!bs) return null;
+  const refs = pickModelRefs(bs, properties || {});
+  if (!refs.length) return null;
+  let allElements = [];
+  for (const ref of refs) {
+    const modelKey = normalizeModelKey(ref, bsKey);
+    const els = await loadModelChainElements(modelKey, 6);
+    if (els) allElements = allElements.concat(els);
+  }
+  if (!allElements.length) return null;
+  return elementsToBoxes(allElements);
+}
+
+const shapeCache = new Map();
+async function resolveShapeRecipe(name, properties) {
+  const key = name + '::' + JSON.stringify(properties || {}, Object.keys(properties||{}).sort());
+  if (shapeCache.has(key)) return shapeCache.get(key);
+  const p = (async () => {
+    try {
+      const boxes = await resolveCustomShapeElements(name, properties);
+      if (boxes && boxes.length) return { rotationY: 0, boxes };
+    } catch (e) { /* fall through to heuristic */ }
+    return getShapeRecipeHeuristic(name, properties);
+  })();
+  shapeCache.set(key, p);
+  return p;
+}
+
+/* =========================================================
+   PART 3 — Archive scanning: structures + textures + blockstates + models
    ========================================================= */
 const STRUCTURE_RE = /(?:^|\/)data\/([a-z0-9_.\-]+)\/structures?\/(.+)\.nbt$/i;
 const TEXTURE_RE = /(?:^|\/)assets\/([a-z0-9_.\-]+)\/textures\/block\/(.+)\.png$/i;
+const BLOCKSTATE_RE = /(?:^|\/)assets\/([a-z0-9_.\-]+)\/blockstates\/(.+)\.json$/i;
+const MODEL_RE = /(?:^|\/)assets\/([a-z0-9_.\-]+)\/models\/block\/(.+)\.json$/i;
 
 async function scanZipEntries(zip, out, state, progress, depth) {
   depth = depth || 0;
@@ -482,18 +568,15 @@ async function scanZipEntries(zip, out, state, progress, depth) {
       }
     } else if (lower.endsWith('.png')) {
       const m = file.name.match(TEXTURE_RE);
-      if (m) {
-        const ns = m[1].toLowerCase();
-        const key = ns + ':' + m[2];
-        state.knownModIds.add(ns);
-        if (!state.textureIndex.has(key)) state.textureIndex.set(key, file);
-      }
+      if (m) { const ns = m[1].toLowerCase(); const key = ns+':'+m[2]; state.knownModIds.add(ns); if (!state.textureIndex.has(key)) state.textureIndex.set(key, file); }
+    } else if (lower.endsWith('.json')) {
+      const bm = file.name.match(BLOCKSTATE_RE);
+      if (bm) { const ns = bm[1].toLowerCase(); const key = ns+':'+bm[2]; state.knownModIds.add(ns); if (!state.blockstateIndex.has(key)) state.blockstateIndex.set(key, file); }
+      const mm = file.name.match(MODEL_RE);
+      if (mm) { const ns = mm[1].toLowerCase(); const key = ns+':'+mm[2]; if (!state.modelIndex.has(key)) state.modelIndex.set(key, file); }
     } else if (lower.endsWith('.jar') || lower.endsWith('.zip')) {
-      try {
-        const buf = await file.async('arraybuffer');
-        const inner = await JSZip.loadAsync(buf);
-        await scanZipEntries(inner, out, state, progress, depth + 1);
-      } catch (e) { /* not a real archive — skip */ }
+      try { const buf = await file.async('arraybuffer'); const inner = await JSZip.loadAsync(buf); await scanZipEntries(inner, out, state, progress, depth + 1); }
+      catch (e) { /* not a real archive — skip */ }
     }
     if (progress && i % 30 === 0) { progress(i, entries.length); await new Promise(r => setTimeout(r, 0)); }
   }
@@ -502,36 +585,43 @@ async function scanZipEntries(zip, out, state, progress, depth) {
 /* =========================================================
    PART 4 — App state + structure building
    ========================================================= */
-const state = { knownModIds: new Set(), textureIndex: new Map(), structures: [], seq: 0 };
+const state = {
+  knownModIds: new Set(), textureIndex: new Map(), blockstateIndex: new Map(), modelIndex: new Map(),
+  structures: [], seq: 0, build: new Map(),
+};
 
 function buildStructure(modId, category, name, nbt) {
   const size = nbt.size || [0,0,0];
   const paletteList = nbt.palette || (nbt.palettes ? nbt.palettes[0] : []) || [];
-  const paletteNames = paletteList.map(p => (p && p.Name) || 'minecraft:air');
+  const paletteInfo = paletteList.map(p => ({ name: (p && p.Name) || 'minecraft:air', properties: (p && p.Properties) || {} }));
   const blocksList = nbt.blocks || [];
-  const positionsByName = new Map();
+  const positionsByIndex = new Map();
   let visibleCount = 0;
   for (const b of blocksList) {
-    const nm = paletteNames[b.state] || 'minecraft:air';
+    const idx = b.state;
+    const nm = (paletteInfo[idx] && paletteInfo[idx].name) || 'minecraft:air';
     if (/(^|:)(air|cave_air|void_air|structure_void)$/.test(nm)) continue;
     visibleCount++;
-    if (!positionsByName.has(nm)) positionsByName.set(nm, []);
-    const pos = b.pos || [0,0,0];
-    positionsByName.get(nm).push(pos);
+    if (!positionsByIndex.has(idx)) positionsByIndex.set(idx, []);
+    positionsByIndex.get(idx).push(b.pos || [0,0,0]);
   }
   state.seq++;
-  return { id:'S'+state.seq, modId, category, name, size, totalEntries: blocksList.length, visibleCount, positionsByName };
+  return { id:'S'+state.seq, modId, category, name, size, totalEntries: blocksList.length, visibleCount, paletteInfo, positionsByIndex };
 }
-
 function computeStructureStats(struct) {
-  const counts = new Map();
-  const missing = new Map();
-  for (const [name, positions] of struct.positionsByName.entries()) {
-    counts.set(name, positions.length);
+  const counts = new Map(); const missing = new Map();
+  for (const [idx, positions] of struct.positionsByIndex.entries()) {
+    const name = (struct.paletteInfo[idx] && struct.paletteInfo[idx].name) || 'minecraft:air';
+    counts.set(name, (counts.get(name)||0) + positions.length);
     const plan = resolveBlockMaterialSync(name);
     if (plan.kind === 'missing') missing.set(plan.ns, (missing.get(plan.ns)||0) + positions.length);
   }
   return { counts, missing };
+}
+function aggregateLibraryMissing() {
+  const missing = new Map();
+  for (const s of state.structures) { const { missing: m } = computeStructureStats(s); for (const [ns,cnt] of m.entries()) missing.set(ns, (missing.get(ns)||0)+cnt); }
+  return missing;
 }
 
 async function ingestZipFile(fileOrBlob, progressCb) {
@@ -542,134 +632,129 @@ async function ingestZipFile(fileOrBlob, progressCb) {
   let ok = 0;
   for (let i = 0; i < rawEntries.length; i++) {
     const entry = rawEntries[i];
-    try {
-      const ab = await entry.file.async('arraybuffer');
-      const nbt = parseStructureNBT(ab);
-      state.structures.push(buildStructure(entry.modId, entry.category, entry.name, nbt));
-      ok++;
-    } catch (e) { console.warn('parse failed', entry.file.name, e); }
+    try { const ab = await entry.file.async('arraybuffer'); const nbt = parseStructureNBT(ab); state.structures.push(buildStructure(entry.modId, entry.category, entry.name, nbt)); ok++; }
+    catch (e) { console.warn('parse failed', entry.file.name, e); }
     if (progressCb && i % 10 === 0) { progressCb(i, rawEntries.length); await new Promise(r=>setTimeout(r,0)); }
   }
   return ok;
 }
 
 /* =========================================================
-   PART 5 — Three.js rendering: procedural + real textures
+   PART 5 — Three.js rendering: procedural + real textures + real shapes
    ========================================================= */
 function hexToRgb(hex){ const n=parseInt(hex.slice(1),16); return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 }; }
 function clamp255(v){ return Math.max(0, Math.min(255, Math.round(v))); }
 function shadeHex(hex, amt){ const c=hexToRgb(hex); const r=clamp255(c.r+amt), g=clamp255(c.g+amt), b=clamp255(c.b+amt);
   return '#'+r.toString(16).padStart(2,'0')+g.toString(16).padStart(2,'0')+b.toString(16).padStart(2,'0'); }
-
 const proceduralCache = new Map();
 function proceduralTexture(color, pattern) {
   const key = pattern+':'+color;
   if (proceduralCache.has(key)) return proceduralCache.get(key);
-  const c = document.createElement('canvas'); c.width=32; c.height=32;
-  const ctx = c.getContext('2d');
+  const c = document.createElement('canvas'); c.width=32; c.height=32; const ctx = c.getContext('2d');
   ctx.fillStyle = color; ctx.fillRect(0,0,32,32);
   const base = hexToRgb(color);
   const shade = (dr,dg,db,a) => { ctx.fillStyle = 'rgba('+clamp255(base.r+dr)+','+clamp255(base.g+dg)+','+clamp255(base.b+db)+','+a+')'; };
-  if (pattern === 'speckle') {
-    for (let i=0;i<130;i++){ const x=Math.random()*32, y=Math.random()*32; const d=(Math.random()-0.5)*50;
-      shade(d,d,d,0.45); ctx.fillRect(x,y,1+Math.random()*1.6,1+Math.random()*1.6); }
-  } else if (pattern === 'grain') {
-    for (let y=0;y<32;y+=2){ const d=(Math.random()-0.5)*34; shade(d,d*0.7,d*0.4,0.32); ctx.fillRect(0,y,32,1+Math.random()); }
-  } else if (pattern === 'grid') {
-    shade(-34,-34,-34,0.55); ctx.fillRect(0,15,32,2); ctx.fillRect(15,0,2,32);
-    for (let i=0;i<36;i++){ const x=Math.random()*32, y=Math.random()*32; const d=(Math.random()-0.5)*22; shade(d,d,d,0.3); ctx.fillRect(x,y,1.5,1.5); }
-  } else {
-    const grad = ctx.createLinearGradient(0,0,32,32);
-    grad.addColorStop(0, shadeHex(color, 16)); grad.addColorStop(1, shadeHex(color, -16));
-    ctx.fillStyle = grad; ctx.fillRect(0,0,32,32);
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
-  proceduralCache.set(key, tex);
-  return tex;
+  if (pattern === 'speckle') { for (let i=0;i<130;i++){ const x=Math.random()*32, y=Math.random()*32; const d=(Math.random()-0.5)*50; shade(d,d,d,0.45); ctx.fillRect(x,y,1+Math.random()*1.6,1+Math.random()*1.6); } }
+  else if (pattern === 'grain') { for (let y=0;y<32;y+=2){ const d=(Math.random()-0.5)*34; shade(d,d*0.7,d*0.4,0.32); ctx.fillRect(0,y,32,1+Math.random()); } }
+  else if (pattern === 'grid') { shade(-34,-34,-34,0.55); ctx.fillRect(0,15,32,2); ctx.fillRect(15,0,2,32); for (let i=0;i<36;i++){ const x=Math.random()*32, y=Math.random()*32; const d=(Math.random()-0.5)*22; shade(d,d,d,0.3); ctx.fillRect(x,y,1.5,1.5); } }
+  else { const grad = ctx.createLinearGradient(0,0,32,32); grad.addColorStop(0, shadeHex(color,16)); grad.addColorStop(1, shadeHex(color,-16)); ctx.fillStyle = grad; ctx.fillRect(0,0,32,32); }
+  const tex = new THREE.CanvasTexture(c); tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+  proceduralCache.set(key, tex); return tex;
 }
 function makeHazardTexture() {
-  const c = document.createElement('canvas'); c.width=32; c.height=32;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#2a1608'; ctx.fillRect(0,0,32,32);
-  ctx.strokeStyle = '#ff8a3d'; ctx.lineWidth = 7;
+  const c = document.createElement('canvas'); c.width=32; c.height=32; const ctx = c.getContext('2d');
+  ctx.fillStyle = '#2a1608'; ctx.fillRect(0,0,32,32); ctx.strokeStyle = '#ff8a3d'; ctx.lineWidth = 7;
   for (let x=-32; x<32; x+=12) { ctx.beginPath(); ctx.moveTo(x,32); ctx.lineTo(x+32,0); ctx.stroke(); }
   const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true; return tex;
 }
 const HAZARD_TEXTURE = makeHazardTexture();
-const boxGeo = new THREE.BoxGeometry(0.94, 0.94, 0.94);
+
+const shapeGeoCache = new Map();
+function getShapeGeometry(size) {
+  const key = size.map(v=>v.toFixed(3)).join('x');
+  if (shapeGeoCache.has(key)) return shapeGeoCache.get(key);
+  const g = new THREE.BoxGeometry(size[0]*0.97, size[1]*0.97, size[2]*0.97);
+  shapeGeoCache.set(key, g); return g;
+}
 
 const realTexPromiseCache = new Map();
 function getRealTexture(texKey) {
   if (realTexPromiseCache.has(texKey)) return realTexPromiseCache.get(texKey);
   const entry = state.textureIndex.get(texKey);
   const p = (async () => {
-    try {
-      const blob = await entry.async('blob');
-      const bitmap = await createImageBitmap(blob);
-      const tex = new THREE.Texture(bitmap);
-      tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
-      tex.needsUpdate = true;
-      return tex;
-    } catch (e) { return null; }
+    try { const blob = await entry.async('blob'); const bitmap = await createImageBitmap(blob);
+      const tex = new THREE.Texture(bitmap); tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; tex.needsUpdate = true; return tex; }
+    catch (e) { return null; }
   })();
-  realTexPromiseCache.set(texKey, p);
-  return p;
+  realTexPromiseCache.set(texKey, p); return p;
 }
-
 const materialCache = new Map();
 async function getMaterialForPlan(plan) {
   if (materialCache.has(plan.key)) return materialCache.get(plan.key);
   let mat;
   if (plan.kind === 'texture') {
     const tex = await getRealTexture(plan.texKey);
-    mat = tex
-      ? new THREE.MeshLambertMaterial({ map: tex, transparent:true, alphaTest:0.5, side:THREE.DoubleSide })
-      : new THREE.MeshLambertMaterial({ map: proceduralTexture(hashColor(plan.texKey), 'speckle') });
-  } else if (plan.kind === 'procedural') {
-    mat = new THREE.MeshLambertMaterial({ map: proceduralTexture(plan.color, plan.pattern) });
-  } else {
-    mat = new THREE.MeshBasicMaterial({ map: HAZARD_TEXTURE });
-  }
-  materialCache.set(plan.key, mat);
-  return mat;
+    mat = tex ? new THREE.MeshLambertMaterial({ map:tex, transparent:true, alphaTest:0.5, side:THREE.DoubleSide })
+              : new THREE.MeshLambertMaterial({ map: proceduralTexture(hashColor(plan.texKey), 'speckle') });
+  } else if (plan.kind === 'procedural') { mat = new THREE.MeshLambertMaterial({ map: proceduralTexture(plan.color, plan.pattern) }); }
+  else { mat = new THREE.MeshBasicMaterial({ map: HAZARD_TEXTURE }); }
+  materialCache.set(plan.key, mat); return mat;
 }
 
 async function buildSceneForStructure(struct, instanceCap) {
   const scene = new THREE.Scene();
   const [sx, sy, sz] = struct.size;
-  const center = new THREE.Vector3(sx/2, sy/2, sz/2);
+  const centerOff = new THREE.Vector3(sx/2, sy/2, sz/2);
   const totalVisible = struct.visibleCount || 1;
   const stride = Math.max(1, Math.ceil(totalVisible / instanceCap));
   const downsampled = stride > 1;
 
+  const indices = [...struct.positionsByIndex.keys()];
+  const materialPlans = new Map(), shapeRecipes = new Map();
+  await Promise.all(indices.map(async idx => {
+    const info = struct.paletteInfo[idx] || { name:'minecraft:stone', properties:{} };
+    if (!materialPlans.has(idx)) materialPlans.set(idx, resolveBlockMaterialSync(info.name));
+    if (!shapeRecipes.has(idx)) shapeRecipes.set(idx, await resolveShapeRecipe(info.name, info.properties));
+  }));
+
   const groups = new Map();
-  for (const [name, positions] of struct.positionsByName.entries()) {
-    const plan = resolveBlockMaterialSync(name);
+  let counter = 0;
+  for (const idx of indices) {
+    const plan = materialPlans.get(idx);
     if (plan.kind === 'skip') continue;
-    const sampled = stride > 1 ? positions.filter((_,i)=>i%stride===0) : positions;
-    if (!sampled.length) continue;
-    if (!groups.has(plan.key)) groups.set(plan.key, { plan, positions: [] });
-    groups.get(plan.key).positions.push(...sampled);
+    const recipe = shapeRecipes.get(idx) || { rotationY:0, boxes:[{size:[1,1,1], offset:[0,0,0]}] };
+    const cosA = Math.cos(recipe.rotationY), sinA = Math.sin(recipe.rotationY);
+    const quat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), recipe.rotationY);
+    const positions = struct.positionsByIndex.get(idx);
+    for (let i = 0; i < positions.length; i++) {
+      if (stride > 1 && (counter++ % stride) !== 0) continue;
+      const p = positions[i];
+      const bx = p[0]+0.5-centerOff.x, by = p[1]+0.5-centerOff.y, bz = p[2]+0.5-centerOff.z;
+      for (const box of recipe.boxes) {
+        const ox=box.offset[0], oy=box.offset[1], oz=box.offset[2];
+        const rx = ox*cosA + oz*sinA, rz = -ox*sinA + oz*cosA;
+        const pos = new THREE.Vector3(bx+rx, by+oy, bz+rz);
+        const sizeKey = box.size.map(v=>v.toFixed(3)).join('x');
+        const key = plan.key + '|' + sizeKey;
+        if (!groups.has(key)) groups.set(key, { plan, size: box.size, items: [] });
+        groups.get(key).items.push({ pos, quat });
+      }
+    }
   }
+
   const entries = [...groups.values()];
   const materials = await Promise.all(entries.map(g => getMaterialForPlan(g.plan)));
-
   entries.forEach((g, gi) => {
-    const mesh = new THREE.InstancedMesh(boxGeo, materials[gi], g.positions.length);
-    const m = new THREE.Matrix4();
-    g.positions.forEach((p, i) => {
-      m.makeTranslation(p[0]+0.5-center.x, p[1]+0.5-center.y, p[2]+0.5-center.z);
-      mesh.setMatrixAt(i, m);
-    });
+    const geo = getShapeGeometry(g.size);
+    const mesh = new THREE.InstancedMesh(geo, materials[gi], g.items.length);
+    const m = new THREE.Matrix4(); const scaleOne = new THREE.Vector3(1,1,1);
+    g.items.forEach((it, i) => { m.compose(it.pos, it.quat, scaleOne); mesh.setMatrixAt(i, m); });
     mesh.instanceMatrix.needsUpdate = true;
     scene.add(mesh);
   });
 
   scene.add(new THREE.HemisphereLight(0xdfe9ff, 0x0a0d16, 1.15));
-  const dir = new THREE.DirectionalLight(0xffffff, 0.6);
-  dir.position.set(4,6,3); scene.add(dir);
-
+  const dir = new THREE.DirectionalLight(0xffffff, 0.6); dir.position.set(4,6,3); scene.add(dir);
   const maxDim = Math.max(sx, sy, sz, 1);
   return { scene, maxDim, downsampled };
 }
@@ -677,9 +762,7 @@ async function buildSceneForStructure(struct, instanceCap) {
 function frameCamera(camera, maxDim, theta, phi, radiusMul) {
   const radius = maxDim * (radiusMul || 1.7);
   camera.position.set(radius*Math.sin(phi)*Math.sin(theta), radius*Math.cos(phi), radius*Math.sin(phi)*Math.cos(theta));
-  camera.lookAt(0,0,0);
-  camera.near = Math.max(0.05, maxDim*0.02); camera.far = maxDim*20;
-  camera.updateProjectionMatrix();
+  camera.lookAt(0,0,0); camera.near = Math.max(0.05, maxDim*0.02); camera.far = maxDim*20; camera.updateProjectionMatrix();
 }
 function disposeScene(scene) { scene.traverse(obj => { if (obj.isInstancedMesh) obj.dispose(); }); }
 
@@ -688,8 +771,7 @@ function getThumbRenderer() {
   if (!thumbRenderer) {
     const c = document.createElement('canvas');
     thumbRenderer = new THREE.WebGLRenderer({ canvas:c, antialias:true, alpha:true, preserveDrawingBuffer:true });
-    thumbRenderer.setSize(300, 300, false);
-    thumbRenderer.setPixelRatio(Math.min(devicePixelRatio||1, 1.5));
+    thumbRenderer.setSize(300, 300, false); thumbRenderer.setPixelRatio(Math.min(devicePixelRatio||1, 1.5));
   }
   return thumbRenderer;
 }
@@ -704,7 +786,6 @@ async function renderThumbnail(struct) {
   return url;
 }
 
-/* live modal viewer: rotate (LMB), zoom (wheel), pan (MMB / wheel-button drag) */
 let modalRenderer = null, modalRAF = null, modalCtl = null;
 async function openModalViewer(struct) {
   const canvas = document.getElementById('modal-canvas');
@@ -713,114 +794,72 @@ async function openModalViewer(struct) {
   modalRenderer = new THREE.WebGLRenderer({ canvas, antialias:true });
   modalRenderer.setPixelRatio(Math.min(devicePixelRatio||1, 2));
   modalRenderer.setSize(w, h, false);
-
   const { scene, maxDim, downsampled } = await buildSceneForStructure(struct, 25000);
   const camera = new THREE.PerspectiveCamera(45, w/h, 0.05, 400);
-
   const initial = { theta: Math.PI*0.28, phi: Math.PI*0.36, radius: maxDim*1.9 };
   let theta = initial.theta, phi = initial.phi, radius = initial.radius;
   let target = new THREE.Vector3(0,0,0);
   const minR = maxDim*0.35, maxR = maxDim*7;
-
   function update(){
-    camera.position.set(
-      target.x + radius*Math.sin(phi)*Math.sin(theta),
-      target.y + radius*Math.cos(phi),
-      target.z + radius*Math.sin(phi)*Math.cos(theta)
-    );
-    camera.lookAt(target);
-    camera.updateMatrixWorld();
-    camera.near = Math.max(0.05, maxDim*0.02); camera.far = maxDim*24;
-    camera.updateProjectionMatrix();
+    camera.position.set(target.x+radius*Math.sin(phi)*Math.sin(theta), target.y+radius*Math.cos(phi), target.z+radius*Math.sin(phi)*Math.cos(theta));
+    camera.lookAt(target); camera.updateMatrixWorld();
+    camera.near = Math.max(0.05, maxDim*0.02); camera.far = maxDim*24; camera.updateProjectionMatrix();
   }
   update();
-
   let dragMode = null, lastX=0, lastY=0;
-  function down(e){
-    if (e.button === 1) { dragMode='pan'; e.preventDefault(); }
-    else if (e.button === 0) { dragMode='rotate'; }
-    else return;
-    lastX=e.clientX; lastY=e.clientY;
-    try { canvas.setPointerCapture(e.pointerId); } catch(err){}
-  }
+  function down(e){ if (e.button===1){ dragMode='pan'; e.preventDefault(); } else if (e.button===0){ dragMode='rotate'; } else return; lastX=e.clientX; lastY=e.clientY; try{canvas.setPointerCapture(e.pointerId);}catch(err){} }
   function up(){ dragMode = null; }
   function move(e){
     if (!dragMode) return;
     const dx=e.clientX-lastX, dy=e.clientY-lastY; lastX=e.clientX; lastY=e.clientY;
-    if (dragMode === 'rotate') {
-      theta -= dx*0.008; phi -= dy*0.008; phi = Math.max(0.12, Math.min(Math.PI-0.12, phi));
-    } else if (dragMode === 'pan') {
-      const panSpeed = radius*0.0016;
-      const camRight = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
-      const camUp = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
-      target.addScaledVector(camRight, -dx*panSpeed);
-      target.addScaledVector(camUp, dy*panSpeed);
-    }
+    if (dragMode==='rotate'){ theta -= dx*0.008; phi -= dy*0.008; phi=Math.max(0.12,Math.min(Math.PI-0.12,phi)); }
+    else if (dragMode==='pan'){ const ps=radius*0.0016; const cr=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0); const cu=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1); target.addScaledVector(cr,-dx*ps); target.addScaledVector(cu,dy*ps); }
     update();
   }
   function wheel(e){ e.preventDefault(); radius = Math.max(minR, Math.min(maxR, radius*(1+e.deltaY*0.0012))); update(); }
   function auxclick(e){ e.preventDefault(); }
-  canvas.addEventListener('pointerdown', down);
-  canvas.addEventListener('pointerup', up);
-  canvas.addEventListener('pointerleave', up);
-  canvas.addEventListener('pointermove', move);
-  canvas.addEventListener('wheel', wheel, { passive:false });
-  canvas.addEventListener('auxclick', auxclick);
-  canvas.addEventListener('contextmenu', e => e.preventDefault());
-
+  canvas.addEventListener('pointerdown', down); canvas.addEventListener('pointerup', up); canvas.addEventListener('pointerleave', up);
+  canvas.addEventListener('pointermove', move); canvas.addEventListener('wheel', wheel, {passive:false});
+  canvas.addEventListener('auxclick', auxclick); canvas.addEventListener('contextmenu', e=>e.preventDefault());
   function loop(){ modalRenderer.render(scene, camera); modalRAF = requestAnimationFrame(loop); }
   loop();
-
   const resetBtn = document.getElementById('modal-reset');
   function resetView(){ theta=initial.theta; phi=initial.phi; radius=initial.radius; target.set(0,0,0); update(); }
   resetBtn.onclick = resetView;
-
   modalCtl = {
     dispose(){
       cancelAnimationFrame(modalRAF);
-      canvas.removeEventListener('pointerdown', down);
-      canvas.removeEventListener('pointerup', up);
-      canvas.removeEventListener('pointerleave', up);
-      canvas.removeEventListener('pointermove', move);
-      canvas.removeEventListener('wheel', wheel);
-      canvas.removeEventListener('auxclick', auxclick);
-      resetBtn.onclick = null;
-      disposeScene(scene);
-      modalRenderer.dispose();
-      modalRenderer = null;
-    },
-    downsampled
+      canvas.removeEventListener('pointerdown', down); canvas.removeEventListener('pointerup', up);
+      canvas.removeEventListener('pointerleave', up); canvas.removeEventListener('pointermove', move);
+      canvas.removeEventListener('wheel', wheel); canvas.removeEventListener('auxclick', auxclick);
+      resetBtn.onclick = null; disposeScene(scene); modalRenderer.dispose(); modalRenderer = null;
+    }, downsampled
   };
   return modalCtl;
 }
 
 /* =========================================================
-   PART 6 — UI wiring: library tree + grid
+   PART 6 — UI wiring: library tree + VIRTUALIZED grid
    ========================================================= */
 const el = id => document.getElementById(id);
 const grid = el('grid'), tree = el('tree');
+function escapeHtml(s){ return (s+'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 function groupStructures(list) {
   const byMod = new Map();
-  for (const s of list) {
-    if (!byMod.has(s.modId)) byMod.set(s.modId, new Map());
-    const byCat = byMod.get(s.modId);
-    if (!byCat.has(s.category)) byCat.set(s.category, []);
-    byCat.get(s.category).push(s);
-  }
+  for (const s of list) { if (!byMod.has(s.modId)) byMod.set(s.modId, new Map()); const byCat = byMod.get(s.modId);
+    if (!byCat.has(s.category)) byCat.set(s.category, []); byCat.get(s.category).push(s); }
   return byMod;
 }
 function rebuildAll(){ rebuildTree(); rebuildGrid(); rebuildTopbar(); }
-
 function rebuildTopbar() {
   el('topbar-sub').textContent = state.structures.length + ' структур · ' + state.knownModIds.size + ' модов';
-  let missingTotal = 0; const missingMods = new Set();
-  for (const s of state.structures) { const { missing } = computeStructureStats(s); for (const [ns,cnt] of missing.entries()) { missingTotal += cnt; missingMods.add(ns); } }
+  const missing = aggregateLibraryMissing();
+  let missingTotal = 0; for (const v of missing.values()) missingTotal += v;
   const chip = el('warn-chip');
-  if (missingTotal > 0) { chip.style.display = 'inline-block'; chip.textContent = '⚠ не хватает ' + missingMods.size + ' мод(ов) для ' + missingTotal + ' блоков'; }
+  if (missingTotal > 0) { chip.style.display = 'inline-block'; chip.textContent = '⚠ не хватает ' + missing.size + ' мод(ов) для ' + missingTotal + ' блоков — нажми'; }
   else chip.style.display = 'none';
 }
-
 function rebuildTree() {
   tree.innerHTML = '';
   if (state.structures.length === 0) { tree.innerHTML = '<div class="empty-note">Пока пусто.<br>Загрузи мод(ы), и здесь появится дерево структур.</div>'; return; }
@@ -829,25 +868,19 @@ function rebuildTree() {
   for (const modId of mods) {
     const catMap = byMod.get(modId);
     const total = [...catMap.values()].reduce((a,c)=>a+c.length,0);
-    const modDet = document.createElement('details');
-    modDet.className = 'mod-node'; modDet.open = mods.length <= 4;
+    const modDet = document.createElement('details'); modDet.className = 'mod-node'; modDet.open = mods.length <= 4;
     const summary = document.createElement('summary');
     summary.innerHTML = '<span class="name"><span class="chev">▶</span>' + escapeHtml(modId) + '</span><span class="count-badge">' + total + '</span>';
     modDet.appendChild(summary);
-    const cats = [...catMap.keys()].sort();
-    for (const cat of cats) {
-      const catDet = document.createElement('details');
-      catDet.className = 'cat-node';
+    for (const cat of [...catMap.keys()].sort()) {
+      const catDet = document.createElement('details'); catDet.className = 'cat-node';
       const catSum = document.createElement('summary');
       catSum.innerHTML = '<span class="chev">▶</span>' + escapeHtml(cat) + ' <span class="count-badge">' + catMap.get(cat).length + '</span>';
       catDet.appendChild(catSum);
       for (const s of catMap.get(cat)) {
-        const item = document.createElement('div');
-        item.className = 'struct-item'; item.textContent = s.name;
-        item.addEventListener('click', () => {
-          const tileEl = document.getElementById('tile-' + s.id);
-          if (tileEl) { tileEl.scrollIntoView({behavior:'smooth', block:'center'}); tileEl.style.borderColor = 'var(--accent)'; setTimeout(()=>tileEl.style.borderColor='', 900); }
-        });
+        const item = document.createElement('div'); item.className = 'struct-item'; item.textContent = s.name;
+        item.addEventListener('click', () => { const tileEl = document.getElementById('tile-'+s.id);
+          if (tileEl) { tileEl.scrollIntoView({behavior:'smooth', block:'center'}); tileEl.style.borderColor='var(--accent)'; setTimeout(()=>tileEl.style.borderColor='',900); } });
         catDet.appendChild(item);
       }
       modDet.appendChild(catDet);
@@ -856,16 +889,22 @@ function rebuildTree() {
   }
 }
 
+/* virtualized thumbnails: bounded concurrency + unload when off-screen */
 const thumbCache = new Map();
+let MAX_CONCURRENT_RENDERS = 2;
+let activeRenders = 0;
+const renderQueue = [];
+const unloadTimers = new Map();
 let io = null;
+
 function rebuildGrid() {
   grid.innerHTML = '';
+  renderQueue.length = 0; unloadTimers.forEach(t=>clearTimeout(t)); unloadTimers.clear();
   if (io) io.disconnect();
-  io = new IntersectionObserver(onTileVisible, { rootMargin: '200px' });
+  io = new IntersectionObserver(onTileVisible, { rootMargin: '250px' });
   let idx = 0;
   for (const s of state.structures) {
-    const tile = document.createElement('div');
-    tile.className = 'tile'; tile.id = 'tile-' + s.id;
+    const tile = document.createElement('div'); tile.className = 'tile'; tile.id = 'tile-' + s.id;
     tile.style.animationDelay = (Math.min(idx, 24) * 12) + 'ms'; idx++;
     tile.dataset.search = (s.modId + ' ' + s.category + ' ' + s.name).toLowerCase();
     const ph = document.createElement('div'); ph.className = 'ph'; tile.appendChild(ph);
@@ -880,23 +919,47 @@ function rebuildGrid() {
 }
 function onTileVisible(entries) {
   for (const e of entries) {
-    if (!e.isIntersecting) continue;
-    const tileEl = e.target; io.unobserve(tileEl);
-    const sid = tileEl.id.replace('tile-','');
-    const struct = state.structures.find(x=>x.id===sid);
-    if (!struct) continue;
-    requestIdleCallbackShim(async () => {
-      let url = thumbCache.get(sid);
-      if (!url) { try { url = await renderThumbnail(struct); thumbCache.set(sid, url); } catch(e){ console.warn(e); return; } }
-      const img = document.createElement('img'); img.src = url;
-      const ph = tileEl.querySelector('.ph'); if (ph) ph.remove();
-      tileEl.insertBefore(img, tileEl.firstChild);
-      requestAnimationFrame(()=> img.classList.add('loaded'));
-    });
+    const tileEl = e.target; const sid = tileEl.id.replace('tile-','');
+    if (e.isIntersecting) {
+      if (unloadTimers.has(sid)) { clearTimeout(unloadTimers.get(sid)); unloadTimers.delete(sid); }
+      if (!tileEl._loaded && !tileEl._queued) {
+        const struct = state.structures.find(x=>x.id===sid);
+        if (struct) { tileEl._queued = true; renderQueue.push({ sid, struct, tileEl }); pumpQueue(); }
+      }
+    } else {
+      if (tileEl._loaded && !unloadTimers.has(sid)) {
+        unloadTimers.set(sid, setTimeout(() => { unloadTile(tileEl, sid); unloadTimers.delete(sid); }, 1200));
+      }
+    }
   }
 }
-function requestIdleCallbackShim(fn){ (window.requestIdleCallback || function(f){setTimeout(f,1);})(fn); }
-function escapeHtml(s){ return (s+'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function pumpQueue() {
+  while (activeRenders < MAX_CONCURRENT_RENDERS && renderQueue.length) {
+    const job = renderQueue.shift();
+    if (!document.body.contains(job.tileEl)) { job.tileEl._queued = false; continue; }
+    activeRenders++;
+    runThumbJob(job).finally(() => { activeRenders--; pumpQueue(); });
+  }
+}
+async function runThumbJob({ sid, struct, tileEl }) {
+  tileEl._queued = false;
+  if (!document.body.contains(tileEl)) return;
+  let url = thumbCache.get(sid);
+  if (!url) { try { url = await renderThumbnail(struct); thumbCache.set(sid, url); } catch(e){ console.warn(e); return; } }
+  if (!document.body.contains(tileEl) || tileEl._loaded) return;
+  const ph = tileEl.querySelector('.ph'); if (ph) ph.remove();
+  const img = document.createElement('img'); img.src = url;
+  tileEl.insertBefore(img, tileEl.firstChild);
+  requestAnimationFrame(()=> img.classList.add('loaded'));
+  tileEl._loaded = true;
+}
+function unloadTile(tileEl, sid) {
+  if (!tileEl._loaded) return;
+  const img = tileEl.querySelector('img'); if (img) img.remove();
+  if (!tileEl.querySelector('.ph')) { const ph=document.createElement('div'); ph.className='ph'; tileEl.insertBefore(ph, tileEl.firstChild); }
+  tileEl._loaded = false;
+  thumbCache.delete(sid);
+}
 
 el('search-input').addEventListener('input', (e) => {
   const q = e.target.value.trim().toLowerCase();
@@ -905,41 +968,68 @@ el('search-input').addEventListener('input', (e) => {
     let anyOpen = q.length===0 ? modDet.open : false;
     modDet.querySelectorAll('details.cat-node').forEach(catDet=>{
       let anyItem = false;
-      catDet.querySelectorAll('.struct-item').forEach(it=>{
-        const match = q.length===0 || it.textContent.toLowerCase().includes(q);
-        it.style.display = match? '' : 'none';
-        if (match) anyItem = true;
-      });
+      catDet.querySelectorAll('.struct-item').forEach(it=>{ const match = q.length===0 || it.textContent.toLowerCase().includes(q); it.style.display = match?'':'none'; if (match) anyItem = true; });
       catDet.style.display = anyItem ? '' : 'none';
       if (q.length>0 && anyItem) { catDet.open = true; anyOpen = true; }
     });
-    modDet.style.display = 'block';
-    if (q.length>0) modDet.open = anyOpen;
+    modDet.style.display = 'block'; if (q.length>0) modDet.open = anyOpen;
   });
 });
 
 /* =========================================================
-   PART 7 — Modal open/close + missing-mod mini cards
+   PART 7 — Missing-mod mini-cards (shared by structure modal + global overview)
    ========================================================= */
 const modGuessCache = new Map();
 async function guessModrinthProject(ns) {
   if (modGuessCache.has(ns)) return modGuessCache.get(ns);
   const p = (async () => {
     try {
-      const facets = encodeURIComponent('[["project_type:mod"]]' );
+      const facets = encodeURIComponent('[["project_type:mod"]]');
       let url = 'https://api.modrinth.com/v2/search?query='+encodeURIComponent(ns)+'&facets='+facets+'&limit=1';
-      const ver = el('version-filter') ? el('version-filter').value : '';
+      const ver = versionDd.getValue();
       if (ver) url += '&facets=' + encodeURIComponent('[["versions:'+ver+'"]]');
-      const res = await fetch(url);
-      const data = await res.json();
+      const res = await fetch(url); const data = await res.json();
       const hit = (data.hits||[])[0];
       return hit ? { title: hit.title, icon: hit.icon_url, projectId: hit.project_id } : null;
     } catch(e) { return null; }
   })();
-  modGuessCache.set(ns, p);
-  return p;
+  modGuessCache.set(ns, p); return p;
+}
+function buildMissingMiniCard(ns, count, onLoaded) {
+  const wrap = document.createElement('div'); wrap.className = 'miss-mini';
+  wrap.innerHTML = '<div class="mm-icon ph"></div><div class="mm-info"><div class="mm-name">'+escapeHtml(ns)+'</div><div class="mm-sub">ищем на Modrinth… · '+count+' блок(ов)</div></div>';
+  guessModrinthProject(ns).then((guess) => {
+    if (!guess) { wrap.querySelector('.mm-sub').textContent = 'не нашли на Modrinth · ' + count + ' блок(ов)'; return; }
+    const img = document.createElement('img'); img.className='mm-icon'; img.loading='lazy'; img.src = guess.icon || ''; img.onerror = () => { img.style.visibility='hidden'; };
+    wrap.querySelector('.mm-icon').replaceWith(img);
+    wrap.querySelector('.mm-name').textContent = guess.title;
+    const sub = wrap.querySelector('.mm-sub'); sub.textContent = '';
+    const btn = document.createElement('button'); btn.className = 'btn primary mm-btn'; btn.textContent = 'Подгрузить';
+    btn.addEventListener('click', async () => {
+      btn.disabled = true; btn.textContent = 'Качаем…';
+      try {
+        const proj = await getExactProject(guess.projectId);
+        const versions = await fetch('https://api.modrinth.com/v2/project/'+guess.projectId+'/version').then(r=>r.json());
+        const v = versions[0];
+        const file = v && ((v.files||[]).find(f=>f.primary) || v.files[0]);
+        if (!file) throw new Error('no file');
+        const blob = await fetch(file.url).then(r=>r.blob());
+        const ok = await ingestZipFile(blob, ()=>{});
+        addToBuild(guess.projectId, { title: guess.title, icon: guess.icon, filename: file.filename, blob, dependencies: v.dependencies||[] });
+        rebuildAll();
+        btn.textContent = 'Готово ✓';
+        showToast(guess.title + ': добавлено (' + ok + ' структур), сборка тоже обновлена');
+        if (onLoaded) onLoaded();
+      } catch (err) { btn.disabled = false; btn.textContent = 'Подгрузить'; showToast('Не получилось автоматически — открой страницу мода и добавь вручную.', true); }
+    });
+    sub.appendChild(btn);
+  });
+  return wrap;
 }
 
+/* =========================================================
+   PART 8 — Modal open/close (per-structure)
+   ========================================================= */
 async function openModal(struct) {
   el('modal-overlay').classList.add('open');
   el('modal-side').innerHTML = '<div class="empty-note">Строим сцену…</div>';
@@ -947,7 +1037,6 @@ async function openModal(struct) {
   const side = el('modal-side');
   const { counts, missing } = computeStructureStats(struct);
   const rows = [...counts.entries()].sort((a,b)=>b[1]-a[1]);
-
   let tableHtml = rows.map(([name,count])=>{
     const plan = resolveBlockMaterialSync(name);
     let sw;
@@ -956,16 +1045,6 @@ async function openModal(struct) {
     else sw = '<span class="sw-dot" style="background:'+plan.color+'"></span>';
     return '<tr><td class="n">'+sw+escapeHtml(name)+'</td><td class="c">'+count+'</td></tr>';
   }).join('');
-
-  let missingHtml = '';
-  if (missing.size > 0) {
-    const mrows = [...missing.entries()].sort((a,b)=>b[1]-a[1]).map(([ns,cnt]) =>
-      '<div class="mrow"><span>'+escapeHtml(ns)+'</span><b>'+cnt+' блок(ов)</b></div>' +
-      '<div class="miss-mini" id="miss-'+escapeHtml(ns)+'"><div class="mm-icon ph"></div><div class="mm-info"><div class="mm-name">'+escapeHtml(ns)+'</div><div class="mm-sub">ищем на Modrinth…</div></div></div>'
-    ).join('');
-    missingHtml = '<div class="ms-block"><h3 style="font-size:13px;color:var(--danger);margin-bottom:8px;">Не хватает текстур / модов</h3><div class="missing-box">'+mrows+
-      '</div></div>';
-  }
 
   side.innerHTML =
     '<div class="ms-block"><h3>'+escapeHtml(struct.name)+'</h3><div class="ms-tag">'+escapeHtml(struct.modId)+' · '+escapeHtml(struct.category)+'</div></div>'+
@@ -976,58 +1055,39 @@ async function openModal(struct) {
       '<div class="stat-row"><span>Уникальных типов</span><b>'+counts.size+'</b></div>'+
       (ctl.downsampled ? '<div class="stat-row" style="color:var(--accent)"><span>Превью упрощено</span><b>да</b></div>' : '')+
     '</div>'+
-    missingHtml+
+    (missing.size>0 ? '<div class="ms-block" id="modal-missing-block"><h3 style="font-size:13px;color:var(--danger);margin-bottom:8px;">Не хватает текстур / модов</h3><div class="missing-box" id="modal-missing-box"></div></div>' : '')+
     '<div class="ms-block" style="flex:1;"><h3 style="font-size:13px;margin-bottom:8px;">Блоки в структуре</h3><table class="btable">'+tableHtml+'</table></div>';
 
+  if (missing.size > 0) {
+    const box = el('modal-missing-box');
+    for (const [ns,cnt] of [...missing.entries()].sort((a,b)=>b[1]-a[1])) {
+      box.appendChild(buildMissingMiniCard(ns, cnt, () => openModal(struct)));
+    }
+  }
   el('modal-close').onclick = closeModal;
   el('modal-overlay').onclick = (e) => { if (e.target.id==='modal-overlay') closeModal(); };
+}
+function closeModal() { el('modal-overlay').classList.remove('open'); if (modalCtl) { modalCtl.dispose(); modalCtl = null; } }
 
-  for (const ns of missing.keys()) {
-    guessModrinthProject(ns).then((guess) => {
-      const container = document.getElementById('miss-'+ns);
-      if (!container) return;
-      if (!guess) { container.querySelector('.mm-sub').textContent = 'не нашли на Modrinth'; return; }
-      const iconEl = container.querySelector('.mm-icon');
-      const img = document.createElement('img'); img.className='mm-icon'; img.src = guess.icon || '';
-      img.onerror = () => { img.style.visibility = 'hidden'; };
-      iconEl.replaceWith(img);
-      container.querySelector('.mm-name').textContent = guess.title;
-      const sub = container.querySelector('.mm-sub'); sub.textContent = '';
-      const btn = document.createElement('button');
-      btn.className = 'btn primary mm-btn'; btn.textContent = 'Подгрузить';
-      btn.addEventListener('click', async () => {
-        btn.disabled = true; btn.textContent = 'Качаем…';
-        try {
-          const versions = await fetch('https://api.modrinth.com/v2/project/'+guess.projectId+'/version').then(r=>r.json());
-          const v = versions[0];
-          const file = v && ((v.files||[]).find(f=>f.primary) || v.files[0]);
-          if (!file) throw new Error('no file');
-          const blob = await fetch(file.url).then(r=>r.blob());
-          const ok = await ingestZipFile(blob, ()=>{});
-          rebuildAll();
-          showToast(guess.title + ': добавлено, обновляю структуру…');
-          openModal(struct);
-        } catch (err) {
-          btn.disabled = false; btn.textContent = 'Подгрузить';
-          showToast('Не получилось автоматически — открой страницу мода и добавь вручную.', true);
-        }
-      });
-      sub.appendChild(btn);
-    });
-  }
+/* global missing-mods overview, opened from the top-bar warning chip */
+function openMissingOverview() {
+  const missing = aggregateLibraryMissing();
+  const list = el('missing-list'); list.innerHTML = '';
+  if (missing.size === 0) { list.innerHTML = '<div class="empty-note">Всё найдено — недостающих модов нет.</div>'; }
+  else { for (const [ns,cnt] of [...missing.entries()].sort((a,b)=>b[1]-a[1])) list.appendChild(buildMissingMiniCard(ns, cnt, openMissingOverview)); }
+  el('missing-overlay').classList.add('open');
 }
-function closeModal() {
-  el('modal-overlay').classList.remove('open');
-  if (modalCtl) { modalCtl.dispose(); modalCtl = null; }
-}
+function closeMissingOverview() { el('missing-overlay').classList.remove('open'); }
+el('warn-chip').addEventListener('click', openMissingOverview);
+el('missing-close').addEventListener('click', closeMissingOverview);
+el('missing-overlay').addEventListener('click', (e) => { if (e.target.id==='missing-overlay') closeMissingOverview(); });
 
 /* =========================================================
-   PART 8 — File ingest UI
+   PART 9 — File ingest UI
    ========================================================= */
 const dz = el('dropzone');
 const fileInput = document.createElement('input');
-fileInput.type = 'file'; fileInput.multiple = true; fileInput.accept = '.zip,.jar';
-fileInput.style.display = 'none';
+fileInput.type = 'file'; fileInput.multiple = true; fileInput.accept = '.zip,.jar'; fileInput.style.display = 'none';
 document.body.appendChild(fileInput);
 el('pick-btn').addEventListener('click', (e)=>{ e.stopPropagation(); fileInput.click(); });
 dz.addEventListener('click', ()=> fileInput.click());
@@ -1035,141 +1095,302 @@ fileInput.addEventListener('change', ()=> handleFiles(fileInput.files));
 ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.add('drag'); }));
 ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.remove('drag'); }));
 dz.addEventListener('drop', e=> handleFiles(e.dataTransfer.files));
-
 async function handleFiles(fileList) {
-  const files = [...fileList];
-  if (!files.length) return;
-  const progLine = el('progress-line'), progBar = progLine.querySelector('i');
-  progLine.classList.add('on');
+  const files = [...fileList]; if (!files.length) return;
+  const progLine = el('progress-line'), progBar = progLine.querySelector('i'); progLine.classList.add('on');
   let totalOk = 0;
   for (const f of files) {
-    try {
-      const ok = await ingestZipFile(f, (i, n) => { progBar.style.width = Math.round((i/Math.max(n,1))*100) + '%'; });
-      totalOk += ok;
-    } catch (e) { console.error(e); showToast('Не получилось разобрать «'+f.name+'» — файл повреждён или это не zip/jar.', true); }
+    try { const ok = await ingestZipFile(f, (i, n) => { progBar.style.width = Math.round((i/Math.max(n,1))*100)+'%'; }); totalOk += ok; }
+    catch (e) { console.error(e); showToast('Не получилось разобрать «'+f.name+'» — файл повреждён или это не zip/jar.', true); }
   }
-  progLine.classList.remove('on'); progBar.style.width = '0%';
-  fileInput.value = '';
+  progLine.classList.remove('on'); progBar.style.width = '0%'; fileInput.value = '';
   rebuildAll();
-  if (totalOk > 0) showToast('Добавлено структур: ' + totalOk);
-  else showToast('В загруженных файлах структур (.nbt) не нашлось.', true);
+  if (totalOk > 0) showToast('Добавлено структур: ' + totalOk); else showToast('В загруженных файлах структур (.nbt) не нашлось.', true);
 }
 function showToast(msg, isErr) {
-  const t = document.createElement('div'); t.className = 'toast' + (isErr ? ' err' : ''); t.textContent = msg;
+  const t = document.createElement('div'); t.className = 'toast' + (isErr?' err':''); t.textContent = msg;
   el('toasts').appendChild(t);
-  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateY(6px)'; setTimeout(()=>t.remove(), 300); }, 4200);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateY(6px)'; setTimeout(()=>t.remove(),300); }, 4200);
 }
 
 /* =========================================================
-   PART 9 — Modrinth "Найти моды" panel + version filter
+   PART 10 — Tabs: Библиотека / Найти моды / Сборка
    ========================================================= */
-const MC_VERSIONS = ['1.21.4','1.21.1','1.21','1.20.6','1.20.4','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.12.2'];
-(function fillVersions(){ const sel = el('version-filter'); for (const v of MC_VERSIONS){ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); } })();
 
+/* --- settings popover --- */
+el('settings-btn').addEventListener('click', (e) => { e.stopPropagation(); el('settings-popover').classList.toggle('open'); });
+document.addEventListener('click', (e) => { if (!e.target.closest('#settings-popover') && !e.target.closest('#settings-btn')) el('settings-popover').classList.remove('open'); });
+el('concurrency-range').addEventListener('input', (e) => { MAX_CONCURRENT_RENDERS = parseInt(e.target.value, 10); el('concurrency-val').textContent = e.target.value; });
+el('clear-cache-btn').addEventListener('click', () => { thumbCache.clear(); rebuildGrid(); showToast('Кэш превью очищен.'); });
+
+/* --- small animated dropdown component (single or multi select) --- */
+function createDropdown({ label, options, multi }) {
+  const wrap = document.createElement('div'); wrap.className = 'ddown';
+  const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'ddown-btn';
+  btn.innerHTML = '<span class="ddown-btn-label"></span><span class="ddown-chev">▾</span>';
+  const panel = document.createElement('div'); panel.className = 'ddown-panel';
+  const st = { value: multi ? [] : '' };
+  let onChangeCb = null;
+  function renderOptions() {
+    panel.innerHTML = '';
+    options.forEach(opt => {
+      const row = document.createElement('div'); row.className = 'ddown-opt';
+      const active = multi ? st.value.includes(opt.value) : st.value === opt.value;
+      row.classList.toggle('active', active);
+      row.textContent = opt.label;
+      row.addEventListener('click', () => {
+        if (multi) {
+          const i = st.value.indexOf(opt.value);
+          if (i >= 0) st.value.splice(i, 1); else st.value.push(opt.value);
+          renderOptions(); updateLabel(); onChangeCb && onChangeCb(st.value);
+        } else {
+          st.value = (st.value === opt.value) ? '' : opt.value;
+          renderOptions(); updateLabel(); wrap.classList.remove('open'); onChangeCb && onChangeCb(st.value);
+        }
+      });
+      panel.appendChild(row);
+    });
+  }
+  function updateLabel() {
+    let text = label;
+    if (multi) { if (st.value.length) text = label + ' (' + st.value.length + ')'; }
+    else { const o = options.find(o => o.value === st.value); if (o && o.value) text = o.label; }
+    btn.querySelector('.ddown-btn-label').textContent = text;
+    btn.classList.toggle('has-value', multi ? st.value.length > 0 : !!st.value);
+  }
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = wrap.classList.contains('open');
+    document.querySelectorAll('.ddown.open').forEach(d => d.classList.remove('open'));
+    if (!isOpen) wrap.classList.add('open');
+  });
+  renderOptions(); updateLabel();
+  wrap.appendChild(btn); wrap.appendChild(panel);
+  return { el: wrap, getValue: () => st.value, setOnChange: (fn) => { onChangeCb = fn; } };
+}
+document.addEventListener('click', (e) => { if (!e.target.closest('.ddown')) document.querySelectorAll('.ddown.open').forEach(d => d.classList.remove('open')); });
+
+function buildSearchFacets({ version, loader, categories, author }) {
+  const facets = [["project_type:mod"]];
+  if (version) facets.push(["versions:"+version]);
+  if (loader) facets.push(["categories:"+loader]);
+  if (categories && categories.length) facets.push(categories.map(c => "categories:"+c));
+  if (author) facets.push(["author:"+author]);
+  return facets;
+}
+
+const MC_VERSIONS = ['1.21.4','1.21.1','1.21','1.20.6','1.20.4','1.20.1','1.19.4','1.19.2','1.18.2','1.17.1','1.16.5','1.12.2'];
+const VERSION_OPTIONS = [{value:'',label:'Любая версия Minecraft'}].concat(MC_VERSIONS.map(v=>({value:v,label:v})));
+const LOADER_OPTIONS = [{value:'',label:'Любой загрузчик'},{value:'neoforge',label:'NeoForge'},{value:'forge',label:'Forge'},{value:'fabric',label:'Fabric'},{value:'quilt',label:'Quilt'}];
+const CATEGORY_OPTIONS = [
+  {value:'technology',label:'Технологии'},{value:'magic',label:'Магия'},{value:'adventure',label:'Приключения'},
+  {value:'decoration',label:'Декор'},{value:'equipment',label:'Экипировка'},{value:'food',label:'Еда'},
+  {value:'library',label:'Библиотека'},{value:'storage',label:'Хранение'},{value:'utility',label:'Утилиты'},
+  {value:'worldgen',label:'Генерация мира'},{value:'mobs',label:'Мобы'},{value:'optimization',label:'Оптимизация'},
+];
+const versionDd = createDropdown({ label:'Любая версия Minecraft', options:VERSION_OPTIONS, multi:false });
+const loaderDd = createDropdown({ label:'Любой загрузчик', options:LOADER_OPTIONS, multi:false });
+const categoryDd = createDropdown({ label:'Все категории', options:CATEGORY_OPTIONS, multi:true });
+el('version-dropdown-mount').appendChild(versionDd.el);
+el('loader-dropdown-mount').appendChild(loaderDd.el);
+el('category-dropdown-mount').appendChild(categoryDd.el);
+[versionDd, loaderDd, categoryDd].forEach(dd => dd.setOnChange(() => searchModrinth(el('modrinth-input').value.trim())));
+
+let currentAuthorFilter = null;
+function renderAuthorChip() {
+  const holder = el('author-filter-holder');
+  holder.innerHTML = currentAuthorFilter ? '<div class="author-chip">Автор: '+escapeHtml(currentAuthorFilter)+' <button id="author-chip-x">×</button></div>' : '';
+  const x = document.getElementById('author-chip-x'); if (x) x.addEventListener('click', clearAuthorFilter);
+}
+function applyAuthorFilter(username) { currentAuthorFilter = username; el('mod-detail').classList.remove('active'); el('mod-grid').style.display='grid'; renderAuthorChip(); searchModrinth(el('modrinth-input').value.trim()); }
+function clearAuthorFilter() { currentAuthorFilter = null; renderAuthorChip(); searchModrinth(el('modrinth-input').value.trim()); }
+
+let findPanelLoaded = false;
 el('tab-lib').addEventListener('click', () => switchTab('lib'));
 el('tab-find').addEventListener('click', () => switchTab('find'));
+el('tab-build').addEventListener('click', () => switchTab('build'));
 function switchTab(which) {
   el('tab-lib').classList.toggle('active', which==='lib');
   el('tab-find').classList.toggle('active', which==='find');
+  el('tab-build').classList.toggle('active', which==='build');
   el('lib-side').style.display = which==='lib' ? '' : 'none';
   el('find-side').style.display = which==='find' ? '' : 'none';
+  el('build-side').style.display = which==='build' ? '' : 'none';
   el('lib-view').style.display = which==='lib' ? '' : 'none';
   el('find-panel').classList.toggle('active', which==='find');
-  el('topbar-title').textContent = which==='lib' ? 'Библиотека' : 'Найти моды';
-  el('topbar-sub').textContent = which==='lib' ? (state.structures.length+' структур · '+state.knownModIds.size+' модов') : 'поиск по Modrinth';
+  el('build-panel').classList.toggle('active', which==='build');
   el('mod-detail').classList.remove('active');
-  if (which==='find') el('mod-grid').style.display = 'grid';
+  if (which==='find') { el('mod-grid').style.display = 'grid'; if (!findPanelLoaded) { findPanelLoaded = true; searchModrinth(''); } }
+  if (which==='build') renderBuildView();
+  const titles = { lib:'Библиотека', find:'Найти моды', build:'Моя сборка' };
+  el('topbar-title').textContent = titles[which];
+  el('topbar-sub').textContent = which==='lib' ? (state.structures.length+' структур · '+state.knownModIds.size+' модов')
+    : which==='find' ? 'поиск по Modrinth' : state.build.size+' мод(ов) для скачивания';
 }
 
 let modrinthTimer = null;
-el('modrinth-input').addEventListener('input', (e) => { clearTimeout(modrinthTimer); const q = e.target.value.trim(); modrinthTimer = setTimeout(()=> searchModrinth(q), 350); });
-el('version-filter').addEventListener('change', () => searchModrinth(el('modrinth-input').value.trim()));
+el('modrinth-input').addEventListener('input', (e) => { clearTimeout(modrinthTimer); const q=e.target.value.trim(); modrinthTimer = setTimeout(()=> searchModrinth(q), 350); });
 
 async function searchModrinth(query) {
-  const grid2 = el('mod-grid');
-  el('mod-detail').classList.remove('active');
-  grid2.style.display = 'grid';
+  const grid2 = el('mod-grid'); el('mod-detail').classList.remove('active'); grid2.style.display = 'grid';
   grid2.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">Ищем…</div>';
   try {
-    const facetsList = [["project_type:mod"]];
-    const ver = el('version-filter').value;
-    if (ver) facetsList.push(["versions:"+ver]);
-    const url = 'https://api.modrinth.com/v2/search?query='+encodeURIComponent(query)+'&facets='+encodeURIComponent(JSON.stringify(facetsList))+'&limit=24';
-    const res = await fetch(url);
-    const data = await res.json();
-    const hits = data.hits || [];
-    if (!hits.length) { grid2.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">Ничего не нашлось'+(ver? ' для версии '+ver : '')+'.</div>'; return; }
+    const ver = versionDd.getValue(), loader = loaderDd.getValue(), categories = categoryDd.getValue();
+    const facetsList = buildSearchFacets({ version: ver, loader, categories, author: currentAuthorFilter });
+    const indexParam = query ? '' : '&index=downloads';
+    const url = 'https://api.modrinth.com/v2/search?query='+encodeURIComponent(query)+'&facets='+encodeURIComponent(JSON.stringify(facetsList))+'&limit=24'+indexParam;
+    const res = await fetch(url); const data = await res.json(); const hits = data.hits || [];
+    if (!hits.length) { grid2.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">Ничего не нашлось'+(ver?' для версии '+ver:'')+'.</div>'; return; }
     grid2.innerHTML = '';
     hits.forEach((hit, i) => {
-      const card = document.createElement('div');
-      card.className = 'mod-card'; card.style.animationDelay = (Math.min(i,20)*10)+'ms';
-      card.innerHTML = '<img src="'+(hit.icon_url||'')+'" onerror="this.style.visibility=\'hidden\'"/>'+
-        '<div class="mi"><h4>'+escapeHtml(hit.title)+'</h4><p>'+escapeHtml(hit.description||'')+'</p><div class="dl">'+formatNum(hit.downloads||0)+' скачиваний</div></div>';
-      card.addEventListener('click', ()=> openModDetail(hit.project_id));
+      const card = document.createElement('div'); card.className = 'mod-card'; card.style.animationDelay = (Math.min(i,20)*10)+'ms';
+      card.innerHTML = '<img src="'+(hit.icon_url||'')+'" loading="lazy" onerror="this.style.visibility=\'hidden\'"/>'+
+        '<div class="mi"><h4>'+escapeHtml(hit.title)+'</h4><p>'+escapeHtml(hit.description||'')+'</p><div class="dl">'+formatNum(hit.downloads||0)+' скачиваний · '+escapeHtml(hit.author||'')+'</div></div>';
+      card.addEventListener('click', ()=> openModDetail(hit.project_id, hit.author));
       grid2.appendChild(card);
     });
-  } catch (e) {
-    grid2.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">Не удалось достучаться до Modrinth API (сеть/CORS). Попробуй ещё раз.</div>';
-  }
+  } catch (e) { grid2.innerHTML = '<div class="empty-note" style="grid-column:1/-1;">Не удалось достучаться до Modrinth API (сеть/CORS). Попробуй ещё раз.</div>'; }
 }
 function formatNum(n){ return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
 
-async function openModDetail(projectId) {
+async function openModDetail(projectId, authorName) {
   el('mod-grid').style.display = 'none';
-  const det = el('mod-detail');
-  det.classList.add('active');
-  det.innerHTML = '<div class="empty-note">Загружаем…</div>';
-  const selectedVer = el('version-filter').value;
+  const det = el('mod-detail'); det.classList.add('active'); det.innerHTML = '<div class="empty-note">Загружаем…</div>';
+  const selectedVer = versionDd.getValue();
   try {
     const [proj, versions] = await Promise.all([
       fetch('https://api.modrinth.com/v2/project/'+projectId).then(r=>r.json()),
       fetch('https://api.modrinth.com/v2/project/'+projectId+'/version').then(r=>r.json())
     ]);
     let html = '<div class="back-link" id="back-to-search">← назад к поиску</div>';
-    html += '<div class="md-head"><img src="'+(proj.icon_url||'')+'" onerror="this.style.visibility=\'hidden\'"/><div><h2>'+escapeHtml(proj.title)+'</h2><div class="author">'+formatNum(proj.downloads||0)+' скачиваний · '+escapeHtml((proj.categories||[]).join(', '))+'</div></div></div>';
+    html += '<div class="md-head"><img src="'+(proj.icon_url||'')+'" onerror="this.style.visibility=\'hidden\'"/><div><h2>'+escapeHtml(proj.title)+'</h2><div class="author">'+formatNum(proj.downloads||0)+' скачиваний'+(authorName?' · <span class="author-link" id="author-link">'+escapeHtml(authorName)+'</span>':'')+'</div></div></div>';
     html += '<div class="md-desc">'+escapeHtml(proj.description||'')+'</div>';
+    if (proj.gallery && proj.gallery.length) {
+      html += '<div class="gallery-strip">' + proj.gallery.map(g => '<img src="'+g.url+'" loading="lazy" alt="" onerror="this.style.display=\'none\'"/>').join('') + '</div>';
+    }
     let list = versions.slice();
-    if (selectedVer) list = list.filter(v => (v.game_versions||[]).includes(selectedVer)).concat(list.filter(v => !(v.game_versions||[]).includes(selectedVer)));
+    if (selectedVer) list = list.filter(v=>(v.game_versions||[]).includes(selectedVer)).concat(list.filter(v=>!(v.game_versions||[]).includes(selectedVer)));
     const top = list.slice(0, 8);
     for (const v of top) {
       const file = (v.files||[]).find(f=>f.primary) || v.files[0];
       if (!file) continue;
       const matches = selectedVer && (v.game_versions||[]).includes(selectedVer);
-      html += '<div class="file-row" data-url="'+encodeURIComponent(file.url)+'" data-name="'+encodeURIComponent(file.filename)+'">'+
+      html += '<div class="file-row" data-vid="'+v.id+'" data-url="'+encodeURIComponent(file.url)+'" data-name="'+encodeURIComponent(file.filename)+'">'+
         '<div><div class="fname">'+escapeHtml(file.filename)+'</div><div class="fmeta'+(matches?' match':'')+'">'+escapeHtml((v.game_versions||[]).slice(-3).join(', '))+' · '+escapeHtml((v.loaders||[]).join('/'))+' · '+Math.round((file.size||0)/1024)+' КБ'+(matches?' · совпадает с фильтром':'')+'</div></div>'+
         '<div class="file-actions"><button class="btn dl-btn">Скачать</button><button class="btn primary add-btn">Добавить в библиотеку</button></div>'+
       '</div>';
     }
     det.innerHTML = html;
     el('back-to-search').addEventListener('click', ()=>{ det.classList.remove('active'); el('mod-grid').style.display='grid'; });
-    det.querySelectorAll('.dl-btn').forEach(btn=>{ const row = btn.closest('.file-row'); btn.addEventListener('click', ()=> downloadDirect(decodeURIComponent(row.dataset.url), decodeURIComponent(row.dataset.name))); });
-    det.querySelectorAll('.add-btn').forEach(btn=>{ const row = btn.closest('.file-row'); btn.addEventListener('click', ()=> addModToLibrary(decodeURIComponent(row.dataset.url), decodeURIComponent(row.dataset.name), btn)); });
+    const authorLinkEl = document.getElementById('author-link'); if (authorLinkEl) authorLinkEl.addEventListener('click', () => applyAuthorFilter(authorName));
+    det.querySelectorAll('.dl-btn').forEach(btn=>{ const row=btn.closest('.file-row'); btn.addEventListener('click', ()=> downloadDirect(decodeURIComponent(row.dataset.url), decodeURIComponent(row.dataset.name))); });
+    det.querySelectorAll('.add-btn').forEach(btn=>{
+      const row = btn.closest('.file-row');
+      const v = top.find(vv => vv.id === row.dataset.vid);
+      btn.addEventListener('click', ()=> addModToLibrary(decodeURIComponent(row.dataset.url), decodeURIComponent(row.dataset.name), btn, { projectId, title:proj.title, icon:proj.icon_url, dependencies: (v&&v.dependencies)||[] }));
+    });
   } catch (e) {
     det.innerHTML = '<div class="back-link" id="back-to-search2">← назад</div><div class="empty-note">Не удалось загрузить страницу мода.</div>';
-    const b = document.getElementById('back-to-search2');
-    if (b) b.addEventListener('click', ()=>{ det.classList.remove('active'); el('mod-grid').style.display='grid'; });
+    const b = document.getElementById('back-to-search2'); if (b) b.addEventListener('click', ()=>{ det.classList.remove('active'); el('mod-grid').style.display='grid'; });
   }
 }
 function downloadDirect(url, filename) {
-  const a = document.createElement('a'); a.href = url; a.download = filename; a.target = '_blank'; a.rel = 'noopener';
-  document.body.appendChild(a); a.click(); a.remove();
+  const a = document.createElement('a'); a.href=url; a.download=filename; a.target='_blank'; a.rel='noopener'; document.body.appendChild(a); a.click(); a.remove();
 }
-async function addModToLibrary(url, filename, btn) {
-  const original = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Загружаем…';
+async function addModToLibrary(url, filename, btn, meta) {
+  const original = btn.textContent; btn.disabled = true; btn.textContent = 'Загружаем…';
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('bad response');
+    const res = await fetch(url); if (!res.ok) throw new Error('bad response');
     const blob = await res.blob();
     const ok = await ingestZipFile(blob, ()=>{});
+    if (meta) addToBuild(meta.projectId, { title: meta.title, icon: meta.icon, filename, blob, dependencies: meta.dependencies||[] });
     rebuildAll();
     btn.textContent = ok > 0 ? 'Добавлено ✓' : 'Структур нет';
-    showToast(filename + ': добавлено структур — ' + ok);
-  } catch (e) {
-    btn.disabled = false; btn.textContent = original;
-    showToast('Не смог скачать автоматически (CORS/сеть). Нажми «Скачать» и перетащи файл в библиотеку вручную.', true);
+    showToast(filename + ': добавлено структур — ' + ok + (meta ? ', попало в сборку' : ''));
+  } catch (e) { btn.disabled = false; btn.textContent = original; showToast('Не смог скачать автоматически (CORS/сеть). Нажми «Скачать» и перетащи файл в библиотеку вручную.', true); }
+}
+
+/* =========================================================
+   PART 11 — "Моя сборка": collect mods + resolve dependencies + export .zip
+   ========================================================= */
+function addToBuild(projectId, info) {
+  if (!projectId) return;
+  state.build.set(projectId, {
+    projectId, title: info.title, icon: info.icon, filename: info.filename, blob: info.blob,
+    size: info.blob ? info.blob.size : 0,
+    dependencies: (info.dependencies||[]).filter(d => d.dependency_type === 'required' && d.project_id),
+  });
+  const badge = el('build-count-badge');
+  badge.style.display = state.build.size ? 'inline-block' : 'none';
+  badge.textContent = state.build.size;
+}
+function removeFromBuild(projectId) { state.build.delete(projectId); renderBuildView(); const badge=el('build-count-badge'); badge.style.display = state.build.size?'inline-block':'none'; badge.textContent = state.build.size; }
+
+const exactProjectCache = new Map();
+function getExactProject(id) {
+  if (exactProjectCache.has(id)) return exactProjectCache.get(id);
+  const p = fetch('https://api.modrinth.com/v2/project/'+id).then(r=>r.json()).catch(()=>null);
+  exactProjectCache.set(id, p); return p;
+}
+
+function renderBuildView() {
+  const wrap = el('build-view');
+  const items = [...state.build.values()];
+  el('topbar-sub').textContent = items.length + ' мод(ов) для скачивания';
+  if (!items.length) { wrap.innerHTML = '<div class="empty-note">Пока пусто. Добавляй моды через «Найти моды» — они появятся здесь, и я соберу из них .zip.</div>'; return; }
+  wrap.innerHTML = '';
+  for (const it of items) {
+    const card = document.createElement('div'); card.className = 'build-card';
+    card.innerHTML = '<img src="'+(it.icon||'')+'" loading="lazy" onerror="this.style.visibility=\'hidden\'"/>'+
+      '<div class="bc-info"><div class="bc-name">'+escapeHtml(it.title)+'</div><div class="bc-file mono">'+escapeHtml(it.filename)+' · '+Math.round(it.size/1024)+' КБ</div>'+
+      '<div class="bc-deps" id="bc-deps-'+it.projectId+'"></div></div>'+
+      '<button class="btn bc-remove" title="Убрать из сборки">×</button>';
+    card.querySelector('.bc-remove').addEventListener('click', ()=> removeFromBuild(it.projectId));
+    wrap.appendChild(card);
+    renderDepsFor(it);
   }
 }
+async function renderDepsFor(it) {
+  const depsEl = document.getElementById('bc-deps-'+it.projectId);
+  if (!depsEl || !it.dependencies.length) return;
+  for (const dep of it.dependencies) {
+    if (state.build.has(dep.project_id)) continue;
+    const chip = document.createElement('span'); chip.className = 'dep-chip'; chip.textContent = 'требует: …';
+    depsEl.appendChild(chip);
+    const proj = await getExactProject(dep.project_id);
+    if (state.build.has(dep.project_id)) { chip.remove(); continue; } // may have been added meanwhile
+    chip.textContent = 'требует: ' + (proj ? proj.title : dep.project_id) + ' ';
+    const addBtn = document.createElement('button'); addBtn.className = 'dep-add'; addBtn.textContent = '+'; addBtn.title = 'Добавить зависимость в сборку';
+    addBtn.addEventListener('click', async () => {
+      addBtn.disabled = true;
+      try {
+        const versions = await fetch('https://api.modrinth.com/v2/project/'+dep.project_id+'/version').then(r=>r.json());
+        const v = versions[0];
+        const file = v && ((v.files||[]).find(f=>f.primary) || v.files[0]);
+        if (!file) throw new Error('no file');
+        const blob = await fetch(file.url).then(r=>r.blob());
+        await ingestZipFile(blob, ()=>{});
+        addToBuild(dep.project_id, { title: proj?proj.title:dep.project_id, icon: proj?proj.icon_url:null, filename: file.filename, blob, dependencies: v.dependencies||[] });
+        rebuildAll(); renderBuildView();
+        showToast((proj?proj.title:dep.project_id) + ': добавлено в сборку');
+      } catch(e) { addBtn.disabled = false; showToast('Не получилось добавить зависимость автоматически.', true); }
+    });
+    chip.appendChild(addBtn);
+  }
+}
+el('build-export').addEventListener('click', async () => {
+  if (!state.build.size) { showToast('Сборка пуста — сначала добавь моды во вкладке «Найти моды».', true); return; }
+  const btn = el('build-export'); const original = btn.textContent; btn.disabled = true; btn.textContent = 'Собираем .zip…';
+  try {
+    const zip = new JSZip();
+    for (const it of state.build.values()) zip.file(it.filename, it.blob);
+    const blob = await zip.generateAsync({ type:'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'my-modpack.zip'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 30000);
+    showToast('Сборка (' + state.build.size + ' мод(ов)) скачивается.');
+  } finally { btn.disabled = false; btn.textContent = original; }
+});
 </script>
 </body>
 </html>
